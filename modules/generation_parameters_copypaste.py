@@ -232,7 +232,10 @@ def connect_paste_params_buttons():
             if binding.only_prompt:
                 paste_field_names = ['Prompt', 'Negative prompt']
             else:
-                paste_field_names = ['Prompt', 'Negative prompt', 'Steps'] + (["Seed"] if shared.opts.send_seed else []) + binding.paste_field_names
+                paste_field_names = ['Prompt', 'Negative prompt'] + binding.paste_field_names
+                paste_field_names += (["Seed"] if shared.opts.send_seed else [])
+                paste_field_names += (["Steps"] if shared.opts.send_steps else [])
+
             if "fields" in paste_fields[binding.source_tabname] and paste_fields[binding.source_tabname]["fields"] is not None:
                 binding.paste_button.click(
                     fn=lambda *x: x,

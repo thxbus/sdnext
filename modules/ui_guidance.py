@@ -7,7 +7,7 @@ guiders = ['Default', 'CFG', 'Zero', 'PAG', 'APG', 'SLG', 'SEG', 'TCFG', 'FDG']
 
 
 def create_guidance_inputs(tab):
-    with gr.Accordion(open=False, label='Guidance', elem_id=f"{tab}_guidance", elem_classes=["small-accordion"]):
+    with gr.Accordion(open=False, visible=False, label='Guidance', elem_id=f"{tab}_guidance", elem_classes=["small-accordion"]):
         with gr.Group():
 
             with gr.Row(elem_id=f"{tab}_guider_row", elem_classes=['flexbox'], visible=shared.opts.model_modular_enable):

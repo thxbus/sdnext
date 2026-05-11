@@ -107,7 +107,7 @@ def create_batch_inputs(tab, accordion=True):
     return batch_count, batch_size
 
 
-def create_seed_inputs(tab, reuse_visible=True, accordion=True, subseed_visible=True, seed_resize_visible=False):
+def create_seed_inputs(tab, reuse_visible=True, accordion=True, subseed_visible=False, seed_resize_visible=False):
     with gr.Accordion(open=False, label="Seed", elem_id=f"{tab}_seed_group", elem_classes=["small-accordion"]) if accordion else gr.Group():
         with gr.Row(elem_id=f"{tab}_seed_row", variant="compact"):
             seed = gr.Number(label='Initial seed', value=-1, elem_id=f"{tab}_seed", container=True)
@@ -157,12 +157,13 @@ def create_advanced_inputs(tab):
             with gr.Row(elem_id=f"{tab}_advanced_options"):
                 tiling = gr.Checkbox(label='Texture tiling', value=False, elem_id=f"{tab}_tiling")
                 hidiffusion = gr.Checkbox(label='HiDiffusion', value=False, elem_id=f"{tab}_hidiffusion")
-    return vae_type, tiling, hidiffusion, clip_skip
+                guidance_scale = gr.Slider(minimum=1.0, maximum=30.0, step=0.1, label='_Guidance scale', value=4.0, elem_id=f"{tab}_guidance_scale")
+    return vae_type, tiling, hidiffusion, clip_skip, guidance_scale
 
 
 def create_latent_inputs(tab):
     # Latent Corrections (during diffusion)
-    with gr.Accordion(open=False, label="Latent Corrections", elem_id=f"{tab}_latent_corrections", elem_classes=["small-accordion"]):
+    with gr.Accordion(open=False, visible=False, label="Latent Corrections", elem_id=f"{tab}_latent_corrections", elem_classes=["small-accordion"]):
         with gr.Group():
             with gr.Row(elem_id=f"{tab}_hdr_mode_row"):
                 hdr_mode = gr.Dropdown(label="Correction mode", choices=["Relative values", "Absolute values"], type="index", value="Relative values", elem_id=f"{tab}_hdr_mode", show_label=False)
@@ -187,7 +188,7 @@ def create_latent_inputs(tab):
 
 def create_color_inputs(tab):
     # Color Grading (post-generation pixel-space)
-    with gr.Accordion(open=False, label="Color Grading", elem_id=f"{tab}_color_grading", elem_classes=["small-accordion"]):
+    with gr.Accordion(open=False, visible=False, label="Color Grading", elem_id=f"{tab}_color_grading", elem_classes=["small-accordion"]):
         with gr.Group():
             with gr.Row(elem_id=f"{tab}_grading_basic_row"):
                 grading_brightness = gr.Slider(minimum=-1.0, maximum=1.0, step=0.05, value=0, label='Brightness', elem_id=f"{tab}_grading_brightness")
@@ -339,7 +340,7 @@ def create_sampler_options(tabname):
 
 
 def create_hires_inputs(tab):
-    with gr.Accordion(open=False, label="Refine", elem_id=f"{tab}_refine_accordion", elem_classes=["small-accordion"]):
+    with gr.Accordion(open=False, visible=False, label="Refine", elem_id=f"{tab}_refine_accordion", elem_classes=["small-accordion"]):
         with gr.Row(elem_id=f"{tab}_hires_row1"):
             enable_hr = gr.Checkbox(label='Enable refine pass', value=False, elem_id=f"{tab}_enable_hr")
         hr_resize_mode, hr_upscaler, hr_resize_context, hr_resize_x, hr_resize_y, hr_scale, _selected_scale_tab = create_resize_inputs(tab, None, accordion=False, latent=True, non_zero=False)

@@ -11,7 +11,7 @@ class ROCmScript(scripts_manager.Script):
 
     def show(self, _is_img2img):
         if shared.cmd_opts.use_rocm or installer.torch_info.get('type') == 'rocm':
-            return scripts_manager.AlwaysVisible  # script should be visible only if rocm is detected or forced
+            return True  # script should be visible only if rocm is detected or forced
         return False
 
     def ui(self, _is_img2img):

@@ -512,7 +512,7 @@ class YoloRestorer(Detailer):
             if not self.ui_mode:
                 log.debug(f'Detailer expert: {text}')
 
-        with gr.Accordion(open=False, label="Detailer", elem_id=f"{tab}_detailer_accordion", elem_classes=["small-accordion"]):
+        with gr.Accordion(open=False, visible=False, label="Detailer", elem_id=f"{tab}_detailer_accordion", elem_classes=["small-accordion"]):
             with gr.Row():
                 enabled = gr.Checkbox(label="Enable detailer pass", elem_id=f"{tab}_detailer_enabled", value=False)
             with gr.Row():
