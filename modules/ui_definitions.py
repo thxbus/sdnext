@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 import sys
 import gradio as gr
-from modules import paths, shared_items, devices, theme, sd_samplers
+from modules import paths, shared_items, devices, theme
 from modules.options import OptionInfo, options_section
 from modules.ui_components import DropdownEditable
 from modules.dml import memory_providers, default_memory_provider
@@ -553,11 +553,6 @@ def create_settings(cmd_opts):
         "return_mask_composite": OptionInfo(False, "Inpainting include masked composite in results"),
         "send_seed": OptionInfo(True, "Send seed when sending prompt or image to other interface", gr.Checkbox, {"visible": False}),
         "send_size": OptionInfo(False, "Send size when sending prompt or image to another interface", gr.Checkbox, {"visible": False}),
-        "send_steps" : OptionInfo(True, "Send steps when sending prompt or image to another interface", gr.Checkbox, {"visible": True}),
-
-        "uifilters_sep_ui" : OptionInfo("<h2>Filters</h2>", "", gr.HTML),
-        "uifilters_available_samplers" : OptionInfo([], "Available samplers", gr.Dropdown, lambda: { "multiselect" : True, "choices": [x.name for x in sd_samplers.all_samplers]}),
-        "uifilters_available_upscalers": OptionInfo([], "Available upscalers", gr.Dropdown, lambda: {"multiselect" : True, "choices": [x.name for x in shared.sd_upscalers]}),
     }))
 
     # --- Live Previews ---

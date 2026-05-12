@@ -150,9 +150,7 @@
     {"id":"","label":"Adapter 2","localized":"","hint":"","ui":"txt2img"},
     {"id":"","label":"Adapter 3","localized":"","hint":"","ui":"txt2img"},
     {"id":"","label":"Adapter 4","localized":"","hint":"","ui":"txt2img"},
-    {"id":"","label":"Audio","localized":"","hint":"","ui":"video"},
-    {"id":"","label":"Available samplers","localized":"","hint":"Controls which samplers are selectable from the Sampling method dropdown. If left empty, all samplers will be available.","ui":"settings_ui"},
-    {"id":"","label":"Available upscalers","localized":"","hint":"Controls which image upscalers are selectable from the Resize method dropdown. If left empty, all upscalers will be available.","ui":"settings_ui"}
+    {"id":"","label":"Audio","localized":"","hint":"","ui":"video"}
   ],
   "b": [
     {"id":"","label":"Batch","localized":"","hint":"Batch processing settings","ui":"img2img"},
@@ -1588,7 +1586,8 @@
     {"id":"","label":"UI scripts order","localized":"","hint":"","ui":"settings_legacy_options"},
     {"id":"","label":"Use upscaler as suffix","localized":"","hint":"","ui":"settings_legacy_options"},
     {"id":"","label":"Unload Current Model from VRAM","localized":"","hint":"","ui":"models_merge_tab"},
-    {"id":"","label":"unet","localized":"","hint":"","ui":"component-5851"}
+    {"id":"","label":"unet","localized":"","hint":"","ui":"component-5851"},
+    {"id":"","label":"Upsample","localized":"","hint":"","ui":"video"}
   ],
   "v": [
     {"id":"video_nav","label":"Video","localized":"","hint":"Create videos using different methods<br>Supports text-to-image, image-to-image first-last-frame, etc."},
