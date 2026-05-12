@@ -234,10 +234,18 @@ def apply_function_to_model(sd_model, function, options, op=None):
     if "VAE" in options:
         if hasattr(sd_model, 'vae') and hasattr(sd_model.vae, 'decode'):
             if op == "compile":
-                sd_model.vae.decode = function(sd_model.vae.decode, op="vae_decode", sd_model=sd_model)
-                sd_model.vae.encode = function(sd_model.vae.encode, op="vae_encode", sd_model=sd_model)
+                if hasattr(sd_model.vae, 'decoder'):
+                    sd_model.vae.decoder = function(sd_model.vae.decoder, op="vae_decoder", sd_model=sd_model)
+                else:
+                    sd_model.vae.decode = function(sd_model.vae.decode, op="vae_decode", sd_model=sd_model)
             else:
                 sd_model.vae = function(sd_model.vae, op="vae", sd_model=sd_model)
+        if hasattr(sd_model, 'vae') and hasattr(sd_model.vae, 'encode'):
+            if op == "compile":
+                if hasattr(sd_model.vae, 'encoder'):
+                    sd_model.vae.encoder = function(sd_model.vae.encoder, op="vae_encoder", sd_model=sd_model)
+                else:
+                    sd_model.vae.encode = function(sd_model.vae.encode, op="vae_encode", sd_model=sd_model)
         if hasattr(sd_model, 'movq') and hasattr(sd_model.movq, 'decode'):
             if op == "compile":
                 sd_model.movq.decode = function(sd_model.movq.decode, op="movq_decode", sd_model=sd_model)

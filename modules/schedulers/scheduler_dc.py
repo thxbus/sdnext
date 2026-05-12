@@ -126,7 +126,7 @@ class DCSolverMultistepScheduler(SchedulerMixin, ConfigMixin):
             Any other scheduler that if specified, the algorithm becomes `solver_p + UniC`.
         use_karras_sigmas (`bool`, *optional*, defaults to `False`):
             Whether to use Karras sigmas for step sizes in the noise schedule during the sampling process. If `True`,
-            the sigmas are determined according to a sequence of noise levels {σi}.
+            the sigmas are determined according to a sequence of noise levels {sigma_i}.
         timestep_spacing (`str`, defaults to `"linspace"`):
             The way the timesteps should be scaled. Refer to Table 2 of the [Common Diffusion Noise Schedules and
             Sample Steps are Flawed](https://huggingface.co/papers/2305.08891) for more information.
@@ -449,7 +449,7 @@ class DCSolverMultistepScheduler(SchedulerMixin, ConfigMixin):
         model_output: torch.FloatTensor = None,
         *args,
         sample: torch.FloatTensor = None,
-        order: int = None,
+        order: int | None = None,
         **kwargs,
     ) -> torch.FloatTensor:
         """
@@ -488,13 +488,13 @@ class DCSolverMultistepScheduler(SchedulerMixin, ConfigMixin):
             )
         model_output_list = self.model_outputs
 
-        s0 = self.timestep_list[-1]
+        self.timestep_list[-1]
         m0 = model_output_list[-1]
         assert m0 is not None
         x = sample
 
         if self.solver_p:
-            raise NotImplementedError()
+            raise NotImplementedError
 
         sigma_t, sigma_s0 = self.sigmas[self.step_index + 1], self.sigmas[self.step_index]
         alpha_t, sigma_t = self._sigma_to_alpha_sigma_t(sigma_t)
@@ -534,7 +534,7 @@ class DCSolverMultistepScheduler(SchedulerMixin, ConfigMixin):
         elif self.config.solver_type == "bh2":
             B_h = torch.expm1(hh)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
 
         for i in range(1, order + 1):
             R.append(torch.pow(rks, i - 1))
@@ -579,7 +579,7 @@ class DCSolverMultistepScheduler(SchedulerMixin, ConfigMixin):
         *args,
         last_sample: torch.FloatTensor = None,
         this_sample: torch.FloatTensor = None,
-        order: int = None,
+        order: int | None = None,
         **kwargs,
     ) -> torch.FloatTensor:
         """
@@ -669,7 +669,7 @@ class DCSolverMultistepScheduler(SchedulerMixin, ConfigMixin):
         elif self.config.solver_type == "bh2":
             B_h = torch.expm1(hh)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
 
         for i in range(1, order + 1):
             R.append(torch.pow(rks, i - 1))
@@ -811,7 +811,7 @@ class DCSolverMultistepScheduler(SchedulerMixin, ConfigMixin):
             return loss
 
         optimizer = torch.optim.AdamW([ratio_param], lr=0.1)
-        for iter_ in range(self.num_iters):
+        for _ in range(self.num_iters):
             optimizer.zero_grad()
             loss = closure(ratio_param)
             loss.backward()

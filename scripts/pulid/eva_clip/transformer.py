@@ -279,8 +279,8 @@ class CustomAttention(nn.Module):
     def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, attn_mask: Optional[torch.Tensor] = None):
         q, k, v = _in_projection_packed(query, key, value, self.in_proj_weight, self.in_proj_bias)
         N_q, B_q, C_q = q.shape
-        N_k, B_k, C_k = k.shape
-        N_v, B_v, C_v = v.shape
+        N_k, B_k, _C_k = k.shape
+        N_v, B_v, _C_v = v.shape
         if self.xattn:
             # B, N, C -> B, N, num_heads, C
             q = q.permute(1, 0, 2).reshape(B_q, N_q, self.num_heads, -1)
@@ -335,7 +335,7 @@ class CustomResidualAttentionBlock(nn.Module):
             d_model: int,
             n_head: int,
             mlp_ratio: float = 4.0,
-            ls_init_value: float = None,
+            ls_init_value: float | None = None,
             act_layer: Callable = nn.GELU,
             norm_layer: Callable = LayerNorm,
             scale_cosine_attn: bool = False,
@@ -386,7 +386,7 @@ class CustomTransformer(nn.Module):
             layers: int,
             heads: int,
             mlp_ratio: float = 4.0,
-            ls_init_value: float = None,
+            ls_init_value: float | None = None,
             act_layer: Callable = nn.GELU,
             norm_layer: Callable = LayerNorm,
             scale_cosine_attn: bool = True,
@@ -436,7 +436,7 @@ class ResidualAttentionBlock(nn.Module):
             d_model: int,
             n_head: int,
             mlp_ratio: float = 4.0,
-            ls_init_value: float = None,
+            ls_init_value: float | None = None,
             act_layer: Callable = nn.GELU,
             norm_layer: Callable = LayerNorm,
             xattn: bool = False,
@@ -479,7 +479,7 @@ class Transformer(nn.Module):
             layers: int,
             heads: int,
             mlp_ratio: float = 4.0,
-            ls_init_value: float = None,
+            ls_init_value: float | None = None,
             act_layer: Callable = nn.GELU,
             norm_layer: Callable = LayerNorm,
             xattn: bool = False,
@@ -513,7 +513,7 @@ class VisionTransformer(nn.Module):
             layers: int,
             heads: int,
             mlp_ratio: float,
-            ls_init_value: float = None,
+            ls_init_value: float | None = None,
             patch_dropout: float = 0.,
             global_average_pool: bool = False,
             output_dim: int = 512,
@@ -634,7 +634,7 @@ class TextTransformer(nn.Module):
             width: int = 512,
             heads: int = 8,
             layers: int = 12,
-            ls_init_value: float = None,
+            ls_init_value: float | None = None,
             output_dim: int = 512,
             act_layer: Callable = nn.GELU,
             norm_layer: Callable = LayerNorm,

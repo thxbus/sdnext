@@ -37,6 +37,15 @@ class ExtraNetworkParams:
             else:
                 self.positional.append(item)
 
+    def __eq__(self, other):
+        if not isinstance(other, ExtraNetworkParams):
+            return False
+        same = self.positional == other.positional and self.named == other.named
+        return same
+
+    def __repr__(self):
+        return f"NetworkParams(positional={self.positional} named={self.named})"
+
 
 class ExtraNetwork:
     def __init__(self, name):

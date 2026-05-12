@@ -272,7 +272,7 @@ def make_diffusers_sdxl_contrtolnet_ppl(block_class):
         @torch.no_grad()
         def __call__(
             self,
-            prompt: Union[str, List[str]] = None,
+            prompt: Union[str, List[str]] | None = None,
             prompt_2: Optional[Union[str, List[str]]] = None,
             image: PipelineImageInput = None,
             control_image: PipelineImageInput = None,
@@ -298,9 +298,9 @@ def make_diffusers_sdxl_contrtolnet_ppl(block_class):
             guess_mode: bool = False,
             control_guidance_start: Union[float, List[float]] = 0.0,
             control_guidance_end: Union[float, List[float]] = 1.0,
-            original_size: Tuple[int, int] = None,
+            original_size: Tuple[int, int] | None = None,
             crops_coords_top_left: Tuple[int, int] = (0, 0),
-            target_size: Tuple[int, int] = None,
+            target_size: Tuple[int, int] | None = None,
             negative_original_size: Optional[Tuple[int, int]] = None,
             negative_crops_coords_top_left: Tuple[int, int] = (0, 0),
             negative_target_size: Optional[Tuple[int, int]] = None,

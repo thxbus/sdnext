@@ -206,19 +206,29 @@ class ExtraNetworksPage:
     def get_exif(self, image: Image.Image):
         import piexif
         import piexif.helper
+        parameters = ''
         try:
-            exifinfo = image.getexif()
-            if exifinfo is not None and len(exifinfo) > 0:
-                return piexif.dump({ "Exif": { piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(exifinfo, encoding="unicode") } })
+            info = image.info or {}
+            for key in ('parameters', 'UserComment'):
+                value = info.get(key)
+                if value and str(value).strip():
+                    parameters = str(value)
+                    break
         except Exception:
             pass
-        try:
-            exifinfo = image.info.get('parameters', None)
-            if exifinfo is not None and len(exifinfo) > 0:
-                return piexif.dump({ "Exif": { piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(exifinfo, encoding="unicode") } })
-        except Exception:
-            pass
-        return piexif.dump({ "Exif": { piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump('', encoding="unicode") } })
+        if not parameters:
+            try:
+                exif_bytes = (image.info or {}).get('exif')
+                if exif_bytes:
+                    parsed = piexif.load(exif_bytes)
+                    raw = parsed.get('Exif', {}).get(piexif.ExifIFD.UserComment)
+                    if raw:
+                        decoded = piexif.helper.UserComment.load(raw)
+                        if decoded and decoded.strip():
+                            parameters = decoded
+            except Exception:
+                pass
+        return piexif.dump({ "Exif": { piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(parameters, encoding="unicode") } })
 
     def create_thumb(self):
         debug(f'EN create-thumb: {self.name}')
@@ -913,7 +923,10 @@ def create_ui(container, button_parent: gr.Button, tabname: str, skip_indexing =
                 b64str = ui.last_item.preview.split(',',1)[1]
                 img = Image.open(io.BytesIO(base64.b64decode(b64str)))
             elif hasattr(item, 'local_preview') and os.path.exists(item.local_preview):
-                img = item.local_preview
+                if os.path.getsize(item.local_preview) < 1024: # sanity check
+                    img = page.find_preview_file(item.filename)
+                else:
+                    img = item.local_preview
             else:
                 img = page.find_preview_file(item.filename)
 

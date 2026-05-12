@@ -14,40 +14,7 @@ exclude = [
     ".git",
     ".ruff_cache",
     ".vscode",
-    "modules/cfgzero",
-    "modules/flash_attn_triton_amd",
-    "modules/hidiffusion",
-    "modules/intel/ipex",
-    "modules/pag",
-    "modules/schedulers",
-    "modules/teacache",
-    "modules/seedvr",
-    "modules/sharpfin",
-    "modules/control/proc",
-    "modules/control/units",
-    "modules/control/units/xs_pipe.py",
-    "modules/postprocess/aurasr_arch.py",
-    "pipelines/meissonic",
-    "pipelines/omnigen2",
-    "pipelines/hdm",
-    "pipelines/segmoe",
-    "pipelines/xomni",
-    "pipelines/chrono",
-    "pipelines/step1x",
-    "pipelines/vibe",
-    "pipelines/ultraflux",
-    "pipelines/lumina_dimmo",
-    "scripts/lbm",
-    "scripts/daam",
-    "scripts/xadapter",
-    "scripts/pulid",
-    "scripts/instantir",
-    "scripts/freescale",
-    "scripts/consistory",
-    "extensions-builtin/Lora",
-    "extensions-builtin/sd-extension-chainner/nodes",
-    "extensions-builtin/sd-webui-agent-scheduler",
-    "extensions-builtin/sdnext-modernui/node_modules",
+    "modules/seedvr/src",
 ]
 
 [tool.ruff.lint]
@@ -78,34 +45,37 @@ ignore = [
     "ASYNC240", # Async functions should not use os.path methods
     "B006",   # Do not use mutable data structures for argument defaults
     "B008",   # Do not perform function call in argument defaults
-    "B905",   # Strict zip() usage
+    "B019",   # Do not use `lru_cache`
+    "B026",   # Star arg unpacking
+    "B905",   # Strict zip usage
+    "C401",   # Unnecessary `generator` comprehension
     "C408",   # Unnecessary `dict` call
-    "C420",   # Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
+    "C417",   # Unnecessary `map` comprehension
+    "C420",   # Unnecessary `dict` comprehension
     "E402",   # Module level import not at top of file
     "E501",   # Line too long
-    "E721",   # Do not compare types, use `isinstance()`
-    "E731",   # Do not assign a `lambda` expression, use a `def`
+    "E721",   # Do not compare types
+    "E731",   # Do not assign a `lambda` expression
     "E741",   # Ambiguous variable name
-    "EXE001", # file with shebang is not marked executable
-    "F401",   # Imported by unused
-    "I001",   # Import block is un-sorted or un-formatted
+    "F401",   # Import unused
+    "F403",   # Import star
+    "I001",   # Import block is un-sorted
     "NPY002", # replace legacy random
     "RUF005", # Consider iterable unpacking
-    "RUF008", # Do not use mutable default values for dataclass
     "RUF010", # Use explicit conversion flag
     "RUF012", # Mutable class attributes
-    "RUF015", # Prefer `next(...)` over single element slice
+    "RUF015", # Prefer `next`
     "RUF022", # All is not sorted
     "RUF046", # Value being cast to `int` is already an integer
     "RUF051", # Prefer pop over del
-    "RUF059", # Unpacked variables are not used
 ]
 fixable = ["ALL"]
 unfixable = []
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.lint.per-file-ignores]
-"modules/caption/joytag.py" = ["RUF013"] # Per header comment: "Do not modify directly — sync from upstream"
+"modules/seedvr/**/*.py" = ["TID252"] # Vendored code: relative imports required for package structure
+"pipelines/omnigen2/**/*.py" = ["TID252"] # Vendored code: relative imports required for package structure
 
 [tool.ruff.format]
 quote-style = "double"
@@ -134,10 +104,12 @@ main.ignore-paths=[
     ".git",
     ".ruff_cache",
     ".vscode",
+    ".*/node_modules/.*",
+    "modules/control/units/xs_pipe.py",
+    "modules/control/proc",
+    "modules/schedulers/scheduler_*.py",
     "modules/apg",
     "modules/cfgzero",
-    "modules/control/proc",
-    "modules/control/units",
     "modules/dml",
     "modules/face",
     "modules/flash_attn_triton_amd",
@@ -155,7 +127,6 @@ main.ignore-paths=[
     "modules/seedvr",
     "modules/sharpfin",
     "modules/rife",
-    "modules/schedulers",
     "modules/taesd",
     "modules/teacache",
     "modules/todo",
@@ -188,11 +159,7 @@ main.ignore-paths=[
     "scripts/differential_diffusion.py",
     "scripts/pulid",
     "scripts/xadapter",
-    "repositories",
     "extensions-builtin/sd-extension-chainner/nodes",
-    "extensions-builtin/sd-webui-agent-scheduler",
-    "extensions-builtin/sdnext-modernui/node_modules",
-    "extensions-builtin/sdnext-kanvas/node_modules",
 ]
 main.ignore-patterns=[
     ".*test*.py$",
@@ -400,8 +367,6 @@ exclude = [
     "venv",
 ]
 extraPaths = [
-    "scripts",
-    "pipelines",
 ]
 reportMissingImports = "none"
 reportInvalidTypeForm = "none"
@@ -422,6 +387,36 @@ include = [
 exclude = [
     "venv/",
     "*.git/",
+    "scripts/pulid/*",
+    "scripts/pixelsmith/*",
+    "scripts/mod/*",
+    "scripts/layerdiffuse/*",
+    "scripts/lbm/*",
+    "scripts/daam/*",
+    "scripts/infiniteyou/*",
+    "scripts/ctrlx/*",
+    "scripts/consistory/*",
+    "scripts/freescale/*",
+    "scripts/instantir/*",
+    "scripts/softfill.py",
+    "scripts/custom_code.py",
+    "pipelines/zetachroma/",
+    "pipelines/xomni/",
+    "pipelines/vibe/",
+    "pipelines/ultraflux/",
+    "pipelines/step1x/",
+    "pipelines/omnigen2/",
+    "pipelines/meissonic/",
+    "pipelines/model_stablecascade.py",
+    "pipelines/lumina_dimmo",
+    "pipelines/hidream",
+    "pipelines/f_lite",
+    "pipelines/bria",
+    "pipelines/ernie",
+    "pipelines/flex2",   
+    "pipelines/anima",
+    "pipelines/meissonic",
+    "extensions-builtin/sd-extension-chainner/nodes",
 ]
 
 [tool.ty.rules]
@@ -436,3 +431,9 @@ unsupported-base = "ignore"
 possibly-missing-attribute = "ignore"
 invalid-parameter-default = "ignore"
 call-non-callable = "ignore"
+not-subscriptable = "ignore"
+possibly-missing-submodule = "ignore"
+missing-argument = "ignore"
+unknown-argument = "ignore"
+invalid-attribute-access = "ignore"
+call-top-callable = "ignore"

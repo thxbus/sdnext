@@ -832,7 +832,7 @@ class HunyuanVideoTransformer3DModelPacked(ModelMixin, ConfigMixin, PeftAdapterM
             clean_latents_4x=None, clean_latent_4x_indices=None
     ):
         hidden_states = self.gradient_checkpointing_method(self.x_embedder.proj, latents)
-        B, C, T, H, W = hidden_states.shape
+        B, _C, T, H, W = hidden_states.shape
 
         if latent_indices is None:
             latent_indices = torch.arange(0, T).unsqueeze(0).expand(B, -1)
@@ -897,7 +897,7 @@ class HunyuanVideoTransformer3DModelPacked(ModelMixin, ConfigMixin, PeftAdapterM
         if attention_kwargs is None:
             attention_kwargs = {}
 
-        batch_size, num_channels, num_frames, height, width = hidden_states.shape
+        batch_size, _num_channels, num_frames, height, width = hidden_states.shape
         p, p_t = self.config['patch_size'], self.config['patch_size_t']
         post_patch_num_frames = num_frames // p_t
         post_patch_height = height // p

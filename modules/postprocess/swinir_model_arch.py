@@ -238,7 +238,7 @@ class SwinTransformerBlock(nn.Module):
 
     def forward(self, x, x_size):
         H, W = x_size
-        B, L, C = x.shape
+        B, _L, C = x.shape
         # assert L == H * W, "input feature has wrong size"
 
         shortcut = x
@@ -559,7 +559,7 @@ class PatchUnEmbed(nn.Module):
         self.embed_dim = embed_dim
 
     def forward(self, x, x_size):
-        B, HW, C = x.shape
+        B, _HW, _C = x.shape
         x = x.transpose(1, 2).view(B, self.embed_dim, x_size[0], x_size[1])  # B Ph*Pw C
         return x
 

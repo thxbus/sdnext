@@ -18,7 +18,7 @@ from .tokenizer import HFTokenizer, tokenize
 from .utils import resize_clip_pos_embed, resize_evaclip_pos_embed, resize_visual_pos_embed, resize_eva_pos_embed
 
 
-_MODEL_CONFIG_PATHS = [Path(__file__).parent / f"model_configs/"]
+_MODEL_CONFIG_PATHS = [Path(__file__).parent / "model_configs/"]
 _MODEL_CONFIGS = {}  # directory (model_name: config) of model architecture configs
 
 
@@ -220,8 +220,8 @@ def create_model(
         pretrained_image: str = '',
         pretrained_text: str = '',
         pretrained_hf: bool = True,
-        pretrained_visual_model: str = None,
-        pretrained_text_model: str = None,
+        pretrained_visual_model: str | None = None,
+        pretrained_text_model: str | None = None,
         cache_dir: Optional[str] = None,
         skip_list: list  = [],
 ):
@@ -367,8 +367,8 @@ def create_model_and_transforms(
         pretrained_image: str = '',
         pretrained_text: str = '',
         pretrained_hf: bool = True,
-        pretrained_visual_model: str = None,
-        pretrained_text_model: str = None,
+        pretrained_visual_model: str | None = None,
+        pretrained_text_model: str | None = None,
         image_mean: Optional[Tuple[float, ...]] = None,
         image_std: Optional[Tuple[float, ...]] = None,
         cache_dir: Optional[str] = None,
@@ -422,8 +422,8 @@ def create_transforms(
         pretrained_image: str = '',
         pretrained_text: str = '',
         pretrained_hf: bool = True,
-        pretrained_visual_model: str = None,
-        pretrained_text_model: str = None,
+        pretrained_visual_model: str | None = None,
+        pretrained_text_model: str | None = None,
         image_mean: Optional[Tuple[float, ...]] = None,
         image_std: Optional[Tuple[float, ...]] = None,
         cache_dir: Optional[str] = None,

@@ -116,8 +116,8 @@ def get_progress(req: models.ReqProgress = Depends()):
     progress = min((current / total) if current > 0 and total > 0 else 0, 1)
     time_since_start = time.time() - shared.state.time_start
     eta_relative = (time_since_start / progress) - time_since_start if progress > 0 else 0
-    # log.critical(f'get_progress: batch {batch_x}/{batch_y} step {step_x}/{step_y} current {current}/{total} time={time_since_start} eta={eta_relative}')
-    # log.critical(shared.state)
+    # log.trace(f'get_progress: batch {batch_x}/{batch_y} step {step_x}/{step_y} current {current}/{total} time={time_since_start} eta={eta_relative}')
+    # log.trace(shared.state)
     res = models.ResProgress(id=shared.state.id, progress=round(progress, 2), eta_relative=round(eta_relative, 2), current_image=current_image, textinfo=shared.state.textinfo, state=shared.state.dict(), )
     return res
 

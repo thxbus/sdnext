@@ -194,14 +194,14 @@ class OpenposeDetector:
     def __call__(self, input_image, detect_resolution=512, image_resolution=512, include_body=True, include_hand=False, include_face=False, hand_and_face=None, output_type="pil", **kwargs):
         self.to(devices.device)
         if hand_and_face is not None:
-            warnings.warn("hand_and_face is deprecated. Use include_hand and include_face instead.", DeprecationWarning)
+            warnings.warn("hand_and_face is deprecated. Use include_hand and include_face instead.", DeprecationWarning, stacklevel=2)
             include_hand = hand_and_face
             include_face = hand_and_face
         if "return_pil" in kwargs:
-            warnings.warn("return_pil is deprecated. Use output_type instead.", DeprecationWarning)
+            warnings.warn("return_pil is deprecated. Use output_type instead.", DeprecationWarning, stacklevel=2)
             output_type = "pil" if kwargs["return_pil"] else "np"
         if type(output_type) is bool:
-            warnings.warn("Passing `True` or `False` to `output_type` is deprecated and will raise an error in future versions")
+            warnings.warn("Passing `True` or `False` to `output_type` is deprecated and will raise an error in future versions", stacklevel=2)
             if output_type:
                 output_type = "pil"
         if not isinstance(input_image, np.ndarray):

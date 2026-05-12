@@ -99,5 +99,5 @@ class UpscalerLatent(Upscaler):
         elif selected_model == "Latent Bicubic antialias":
             mode, antialias = 'bicubic', True
         else:
-            raise log.error(f"Upscale: type=latent model={selected_model} unknown")
+            log.error(f"Upscale: type=latent model={selected_model} unknown")
         return F.interpolate(img, size=(h, w), mode=mode, antialias=antialias)

@@ -59,6 +59,23 @@ def diffusers_callback(pipe, step: int = 0, timestep: int = 0, kwargs: dict | No
         torch.xpu.synchronize(devices.device)
     elif devices.backend in {"cuda", "zluda", "rocm"}:
         torch.cuda.synchronize(devices.device)
+
+    if shared.state.paused:
+        log.debug('Sampling paused')
+        while shared.state.paused:
+            if shared.state.interrupted or shared.state.skipped:
+                raise AssertionError('Interrupted...')
+            time.sleep(0.1)
+
+    image = kwargs.get('image', None)
+    if image is not None:
+        shared.state.current_image = image
+        shared.state.current_latent = None
+        shared.state.step() # increase step
+        shared.state.preview_job = -1 # indicate that preview image has changed
+        debug_callback(f'Callback: step={step} timestep={timestep} image={image if image is not None else None} kwargs={list(kwargs)}')
+        return kwargs
+
     latents = kwargs.get('latents', None)
     if debug:
         debug_callback(f'Callback: step={step} timestep={timestep} latents={latents.shape if latents is not None else None} kwargs={list(kwargs)}')
@@ -67,12 +84,6 @@ def diffusers_callback(pipe, step: int = 0, timestep: int = 0, kwargs: dict | No
     shared.state.step()
     if shared.state.interrupted or shared.state.skipped:
         raise AssertionError('Interrupted...')
-    if shared.state.paused:
-        log.debug('Sampling paused')
-        while shared.state.paused:
-            if shared.state.interrupted or shared.state.skipped:
-                raise AssertionError('Interrupted...')
-            time.sleep(0.1)
     if latents is None:
         return kwargs
     elif shared.opts.nan_skip:

@@ -8,6 +8,10 @@ This folder contains repo-local Copilot skills for recurring SD.Next tasks.
   File: `port-model/SKILL.md`
   Use when adding or porting a model family into SD.Next and Diffusers.
 
+- `port-pipeline`
+  File: `port-pipeline/SKILL.md`
+  Use when porting a custom pipeline implementation into a Diffusers pipeline class while preserving behavior and avoiding hard-coded runtime assumptions.
+
 - `debug-model`
   File: `debug-model/SKILL.md`
   Use when a new or existing SD.Next/Diffusers model integration fails during detect, load, prompt encode, sample, or output handling.

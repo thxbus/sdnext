@@ -26,6 +26,7 @@ allow_native = [
     'sdxl',
     'sd3',
     'f1',
+    'f2',
     'chroma',
     'zimage',
     'anima',
@@ -43,18 +44,36 @@ fuse_ignore = [
 
 
 def get_method(shorthash=''):
-    use_diffusers = shared.opts.lora_force_diffusers or (shared.sd_model.__class__.__name__ in force_classes_diffusers) or (shared.sd_model_type not in allow_native)
-    if len(shorthash) > 4:
-        use_diffusers = use_diffusers or any(x.startswith(shorthash) for x in force_hashes_diffusers)
+    """Return ``(method, reason)`` for the active LoRA loading strategy.
+
+    ``method`` is one of ``'native'``, ``'diffusers'``, ``'nunchaku'``.
+    ``reason`` is a short identifier indicating which condition triggered the
+    chosen method, useful for distinguishing user-opt-in from automatic
+    fallback in logs. Reasons:
+
+    - ``'nunchaku-transformer'`` / ``'nunchaku-unet'``: a Nunchaku-quantized
+      component is loaded.
+    - ``'opt-in'``: ``shared.opts.lora_force_diffusers`` is on (settings).
+    - ``'class-forced'``: pipeline class is in ``force_classes_diffusers``.
+    - ``'arch-unsupported'``: ``sd_model_type`` is not in ``allow_native``.
+    - ``'hash-forced'``: file hash is in ``force_hashes_diffusers``.
+    - ``'default'``: native path is the active and unforced choice.
+    """
     nunchaku_dit = hasattr(shared.sd_model, 'transformer') and 'Nunchaku' in shared.sd_model.transformer.__class__.__name__
     nunchaku_unet = hasattr(shared.sd_model, 'unet') and 'Nunchaku' in shared.sd_model.unet.__class__.__name__
-    use_nunchaku = nunchaku_dit or nunchaku_unet
-    if use_nunchaku:
-        return 'nunchaku'
-    elif use_diffusers:
-        return 'diffusers'
-    else:
-        return 'native'
+    if nunchaku_dit:
+        return 'nunchaku', 'nunchaku-transformer'
+    if nunchaku_unet:
+        return 'nunchaku', 'nunchaku-unet'
+    if shared.opts.lora_force_diffusers:
+        return 'diffusers', 'opt-in'
+    if shared.sd_model.__class__.__name__ in force_classes_diffusers:
+        return 'diffusers', 'class-forced'
+    if shared.sd_model_type not in allow_native:
+        return 'diffusers', 'arch-unsupported'
+    if len(shorthash) > 4 and any(x.startswith(shorthash) for x in force_hashes_diffusers):
+        return 'diffusers', 'hash-forced'
+    return 'native', 'default'
 
 
 def disable_fuse():

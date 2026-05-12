@@ -166,7 +166,7 @@ class SegMoEPipeline:
             if not os.path.isfile("base/model.safetensors"):
                 os.system(
                     "wget -O "
-                    + "base/model.safetensors"
+                     "base/model.safetensors"
                     + self.config["base_model"]
                     + " --content-disposition"
                 )
@@ -221,8 +221,8 @@ class SegMoEPipeline:
                             if not os.path.isfile(f"expert_{i}/model.safetensors"):
                                 os.system(
                                     f"wget {exp['source_model']} -O "
-                                    + f"expert_{i}/model.safetensors"
-                                    + " --content-disposition"
+                                     f"expert_{i}/model.safetensors"
+                                     " --content-disposition"
                                 )
                         exp["source_model"] = f"expert_{i}/model.safetensors"
                         expert = DiffusionPipeline.from_single_file(
@@ -267,8 +267,8 @@ class SegMoEPipeline:
                                 ):
                                     os.system(
                                         f"wget {lora['source_model']} -O "
-                                        + f"expert_{i}/lora_{j}/pytorch_lora_weights.safetensors"
-                                        + " --content-disposition"
+                                         f"expert_{i}/lora_{j}/pytorch_lora_weights.safetensors"
+                                         " --content-disposition"
                                     )
                                 lora["source_model"] = f"expert_{j}/lora_{j}"
                                 expert.load_lora_weights(lora["source_model"])
@@ -299,8 +299,8 @@ class SegMoEPipeline:
                             ):
                                 os.system(
                                     f"wget {lora['source_model']} -O "
-                                    + f"lora_{i}/pytorch_lora_weights.safetensors"
-                                    + " --content-disposition"
+                                     f"lora_{i}/pytorch_lora_weights.safetensors"
+                                     " --content-disposition"
                                 )
                             lora["source_model"] = f"lora_{i}"
                             self.pipe.load_lora_weights(lora["source_model"])
@@ -338,8 +338,8 @@ class SegMoEPipeline:
                             ):
                                 os.system(
                                     f"wget {lora['source_model']} -O "
-                                    + f"lora_{i}/pytorch_lora_weights.safetensors"
-                                    + " --content-disposition"
+                                     f"lora_{i}/pytorch_lora_weights.safetensors"
+                                     " --content-disposition"
                                 )
                             lora["source_model"] = f"lora_{i}"
                             experts[j[i]].load_lora_weights(lora["source_model"])

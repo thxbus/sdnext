@@ -59,7 +59,7 @@ def list_models(refresh=False):
 
 
 class ControlNetXS():
-    def __init__(self, model_id: str = None, device = None, dtype = None, load_config = None):
+    def __init__(self, model_id: str | None = None, device = None, dtype = None, load_config = None):
         self.model: ControlNetXSModel = None
         self.model_id: str = model_id
         self.device = device
@@ -79,26 +79,25 @@ class ControlNetXS():
         self.model = None
         self.model_id = None
 
-    def load(self, model_id: str = None, time_embedding_mix: float = 0.0, force: bool = True) -> str:
+    def load(self, model_id: str | None = None, time_embedding_mix: float = 0.0, force: bool = True) -> str:
         with load_lock:
             try:
                 t0 = time.time()
                 model_id = model_id or self.model_id
                 if model_id is None or model_id == 'None':
                     self.reset()
-                    return
+                    return ''
                 if model_id not in all_models:
                     log.error(f'Control {what} unknown model: id="{model_id}" available={list(all_models)}')
-                    return
+                    return ''
                 model_path = all_models[model_id]
                 if model_path == '':
-                    return
+                    return ''
                 if model_path is None:
                     log.error(f'Control {what} model load failed: id="{model_id}" error=unknown model id')
-                    return
+                    return ''
                 if model_id == self.model_id and not force:
-                    # log.debug(f'Control {what} model: id="{model_id}" path="{model_path}" already loaded')
-                    return
+                    return ''
                 self.load_config['time_embedding_mix'] = time_embedding_mix
                 if opts.offline_mode:
                     self.load_config["local_files_only"] = True

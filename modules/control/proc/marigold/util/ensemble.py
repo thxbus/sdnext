@@ -43,7 +43,7 @@ def ensemble_depths(
     max_iter: int = 2,
     tol: float = 1e-3,
     reduction: str = "median",
-    max_res: int = None,
+    max_res: int | None = None,
 ):
     """
     To ensemble multiple affine-invariant depth images (up to scale and shift),

@@ -1,8 +1,8 @@
 from typing import List, Optional, Tuple, Union
 import torch
 from einops import rearrange
-from ..common.diffusion import classifier_free_guidance_dispatcher, create_sampler_from_config, create_sampling_timesteps_from_config, create_schedule_from_config
-from ..models.dit_v2 import na
+from modules.seedvr.src.common.diffusion import classifier_free_guidance_dispatcher, create_sampler_from_config, create_sampling_timesteps_from_config, create_schedule_from_config
+from modules.seedvr.src.models.dit_v2 import na
 
 
 def optimized_channels_to_last(tensor: torch.Tensor) -> torch.Tensor:

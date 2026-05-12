@@ -650,7 +650,7 @@ class StableDiffusionXLFreeScale(DiffusionPipeline, FromSingleFileMixin, LoraLoa
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def __call__(
         self,
-        prompt: Union[str, List[str]] = None,
+        prompt: Union[str, List[str]] | None = None,
         prompt_2: Optional[Union[str, List[str]]] = None,
         height: Optional[int] = None,
         width: Optional[int] = None,
@@ -951,7 +951,7 @@ class StableDiffusionXLFreeScale(DiffusionPipeline, FromSingleFileMixin, LoraLoa
 
         for restart_index, target_size in enumerate(target_sizes):
             restart_step = restart_steps[restart_index]
-            target_size_ = [target_size[0]//8, target_size[1]//8]
+            [target_size[0]//8, target_size[1]//8]
 
             for block in self.unet.down_blocks + [self.unet.mid_block] + self.unet.up_blocks:
                 for module in block.modules():
@@ -1154,12 +1154,12 @@ class StableDiffusionXLFreeScale(DiffusionPipeline, FromSingleFileMixin, LoraLoa
     def save_lora_weights(
         self,
         save_directory: Union[str, os.PathLike],
-        unet_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] = None,
-        text_encoder_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] = None,
-        text_encoder_2_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] = None,
+        unet_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] | None = None,
+        text_encoder_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] | None = None,
+        text_encoder_2_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] | None = None,
         is_main_process: bool = True,
-        weight_name: str = None,
-        save_function: Callable = None,
+        weight_name: str | None = None,
+        save_function: Callable | None = None,
         safe_serialization: bool = True,
     ):
         state_dict = {}

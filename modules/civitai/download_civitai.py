@@ -323,9 +323,12 @@ class DownloadManager:
             if version and version.images:
                 for img in version.images:
                     if img.url:
-                        code, _size, _note = download_civit_preview(final_file, img.url)
+                        code, _size, _note = download_civit_preview(final_file, img.url, meta=img.meta)
                         if code == 200:
                             log.info(f'CivitAI preview saved: id={item.id}')
+                            break
+                        if code == 304 and backfill_preview_parameters(final_file, img.url, img.meta):
+                            log.info(f'CivitAI preview backfilled: id={item.id}')
                             break
         except Exception as e:
             log.warning(f'CivitAI preview fetch failed: id={item.id} {e}')
@@ -338,6 +341,306 @@ class DownloadManager:
 
 
 download_manager = DownloadManager()
+
+
+# ---- Preview metadata helpers ----
+
+NOISE_META_KEYS = frozenset({'hashes', 'comfy', 'comfyui', 'workflow', 'extrametadata'})
+PASSTHROUGH_VALUE_LIMIT = 512  # chars; pass-through values longer than this are dropped
+
+
+def civitai_meta_to_parameters(meta: dict | None) -> str:
+    """Convert Civitai version-image meta dict to sdnext parameters string.
+
+    Output matches sdnext's standard `parameters` channel (`modules/image/save.py:65-72`):
+    positive prompt on line one, optional `Negative prompt:` line two,
+    comma-joined `Key: Value` pairs on line three. Round-trippable through
+    `modules.infotext.parse`. Generator-specific noise keys (full ComfyUI
+    workflows, etc.) are dropped and any pass-through value exceeding
+    `PASSTHROUGH_VALUE_LIMIT` chars is omitted to keep the embedded chunk
+    compact.
+    """
+    if not meta or not isinstance(meta, dict):
+        return ''
+    import json
+    from modules.infotext import quote
+    lower = {k.lower(): (k, v) for k, v in meta.items()}
+
+    def lookup(*keys):
+        for k in keys:
+            if k.lower() in lower:
+                return lower[k.lower()][1]
+        return None
+
+    prompt = lookup('prompt') or ''
+    negative = lookup('negativePrompt', 'negative_prompt', 'Negative prompt') or ''
+    pairs = []
+    mapping = [
+        (('steps',), 'Steps'),
+        (('sampler',), 'Sampler'),
+        (('cfgScale', 'cfg_scale', 'CFG scale'), 'CFG scale'),
+        (('seed',), 'Seed'),
+        (('Size',), 'Size'),
+        (('Model',), 'Model'),
+        (('Model hash', 'modelHash'), 'Model hash'),
+        (('clipSkip', 'clip_skip', 'Clip skip'), 'Clip skip'),
+        (('denoisingStrength', 'Denoising strength'), 'Denoising strength'),
+    ]
+    consumed = {'prompt', 'negativeprompt', 'negative_prompt'}
+    for src_keys, out_key in mapping:
+        v = lookup(*src_keys)
+        if v is None or v == '':
+            continue
+        pairs.append(f'{out_key}: {quote(v)}')
+        for k in src_keys:
+            consumed.add(k.lower())
+    for k, v in meta.items():
+        if k.lower() in consumed:
+            continue
+        if k.lower() in NOISE_META_KEYS:
+            continue
+        if k in ('resources', 'civitaiResources'):
+            try:
+                pairs.append(f'Civitai resources: {quote(json.dumps(v, separators=(",", ":")))}')
+            except Exception:
+                pass
+            continue
+        if v is None or v == '':
+            continue
+        quoted = quote(v)
+        if len(str(quoted)) > PASSTHROUGH_VALUE_LIMIT:
+            continue
+        pairs.append(f'{k}: {quoted}')
+    lines = [str(prompt).strip()]
+    if negative:
+        lines.append(f'Negative prompt: {negative}')
+    if pairs:
+        lines.append(', '.join(pairs))
+    return '\n'.join(lines)
+
+
+def fit_parameters_for_exif(parameters: str, limit: int = 30000) -> str:
+    """Trim parameters string to fit JPEG/WEBP EXIF UserComment.
+
+    JPEG's APP1 segment caps at 64KB; UserComment is UTF-16-LE encoded so
+    each char takes 2 bytes. A 30000-char limit keeps the encoded payload
+    around 60KB with headroom for piexif overhead. Drops the
+    `Civitai resources` field first (typical bloat source) and truncates as
+    last resort. PNG callers don't need this since `tEXt` chunks are
+    unbounded.
+    """
+    if len(parameters) <= limit:
+        return parameters
+    lines = parameters.split('\n')
+    if len(lines) >= 3:
+        parts = [p for p in lines[2].split(', ') if not p.startswith('Civitai resources:')]
+        lines[2] = ', '.join(parts)
+        parameters = '\n'.join(lines)
+        if len(parameters) <= limit:
+            return parameters
+    return parameters[:max(0, limit - 32)].rstrip() + '\n[truncated]'
+
+
+def embed_preview_parameters(preview_file: str, parameters: str) -> bool:
+    """Embed parameters string into preview image at `preview_file`.
+
+    PNG -> `tEXt` chunk with key `parameters`. JPEG/WEBP -> EXIF
+    `UserComment` via piexif. RGBA is converted to RGB before JPEG save.
+    Other extensions: no-op. Returns success.
+
+    Writes are atomic (temp file + os.replace). On success, any co-located
+    `<base>.thumb.jpg` is removed so the lazy thumb generator re-emits it
+    carrying the new params. Embed failures are swallowed and logged at
+    debug; the source file is removed only when PIL cannot read it back,
+    so the caller can re-download a fresh copy.
+    """
+    if not preview_file or not parameters:
+        return False
+    ext = os.path.splitext(preview_file)[1].lower()
+    if ext not in ('.png', '.jpg', '.jpeg', '.webp'):
+        return False
+    tmp_file = preview_file + '.embed.tmp'
+    try:
+        from PIL import Image
+        img = Image.open(preview_file)
+        img.load()
+        try:
+            if ext == '.png':
+                from PIL import PngImagePlugin
+                pnginfo = PngImagePlugin.PngInfo()
+                pnginfo.add_text('parameters', parameters)
+                img.save(tmp_file, format='PNG', pnginfo=pnginfo)
+            else:
+                import piexif
+                import piexif.helper
+                payload = fit_parameters_for_exif(parameters)
+                exif_bytes = piexif.dump({'Exif': {piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(payload, encoding='unicode')}})
+                if ext in ('.jpg', '.jpeg'):
+                    if img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    img.save(tmp_file, format='JPEG', quality=95, exif=exif_bytes)
+                else:
+                    img.save(tmp_file, format='WEBP', quality=95, exif=exif_bytes)
+        finally:
+            img.close()
+        os.replace(tmp_file, preview_file)
+        thumb_base = os.path.splitext(preview_file)[0]
+        if thumb_base.endswith('.preview'):
+            thumb_base = thumb_base[:-len('.preview')]
+        thumb_file = thumb_base + '.thumb.jpg'
+        if os.path.exists(thumb_file):
+            try:
+                os.remove(thumb_file)
+                log.debug(f'CivitAI thumb invalidated: file="{thumb_file}"')
+            except Exception:
+                pass
+        return True
+    except Exception as e:
+        try:
+            if os.path.exists(tmp_file):
+                os.remove(tmp_file)
+        except Exception:
+            pass
+        try:
+            from PIL import Image as PILImage
+            with PILImage.open(preview_file) as probe:
+                probe.verify()
+        except Exception:
+            try:
+                os.remove(preview_file)
+                log.warning(f'CivitAI preview removing invalid: image={preview_file}')
+            except Exception:
+                pass
+        log.debug(f'CivitAI preview embed failed: file="{preview_file}" {e}')
+        return False
+
+
+def resolve_preview_file(item: dict) -> str | None:
+    """Resolve the actual on-disk preview file for a network item.
+
+    `item['local_preview']` is the aspirational save path (e.g.
+    `<base>.<samples_format>`), not necessarily the existing file. This
+    helper extracts the real path from `item['preview']` URL (set by
+    `ExtraNetworksPage.link_preview`) and falls back to scanning common
+    extensions at the model base. Returns None when nothing on-disk
+    matches.
+    """
+    preview_url = item.get('preview') or ''
+    if preview_url and 'missing.png' not in preview_url:
+        try:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(preview_url)
+            fn = urllib.parse.parse_qs(parsed.query).get('filename', [None])[0]
+            if fn:
+                fn = urllib.parse.unquote(fn)
+                if os.path.isfile(fn):
+                    return fn
+        except Exception:
+            pass
+    filename = item.get('filename')
+    if not filename:
+        return None
+    return find_ui_preview_file(filename)
+
+
+def preview_has_parameters(preview_file: str) -> bool:
+    """Check whether `preview_file` carries a non-empty embedded parameters string.
+
+    Mirrors `modules/image/metadata.py:read_info_from_image`: PNG
+    `image.info["parameters"]` or JPEG/WEBP EXIF `UserComment`. EXIF
+    UserComment is decoded via piexif.helper to verify a non-empty body;
+    the 8-byte `b"UNICODE\\x00"` header is present in any UserComment
+    even when its body is empty.
+    """
+    if not preview_file or not os.path.exists(preview_file):
+        return False
+    try:
+        from PIL import Image
+        img = Image.open(preview_file)
+        try:
+            info = img.info or {}
+            for key in ('parameters', 'UserComment'):
+                value = info.get(key)
+                if value and str(value).strip():
+                    return True
+            exif = info.get('exif')
+            if exif:
+                import piexif
+                import piexif.helper
+                try:
+                    parsed = piexif.load(exif)
+                    raw = parsed.get('Exif', {}).get(piexif.ExifIFD.UserComment)
+                    if raw:
+                        try:
+                            decoded = piexif.helper.UserComment.load(raw)
+                        except Exception:
+                            decoded = ''
+                        if decoded and decoded.strip():
+                            return True
+                except Exception:
+                    pass
+        finally:
+            img.close()
+    except Exception:
+        pass
+    return False
+
+
+VIDEO_PREVIEW_EXTENSIONS = ('.mp4', '.webm')
+UI_PREVIEW_EXTS = ('jpg', 'jpeg', 'png', 'webp')
+UI_PREVIEW_MIDS = ('.thumb.', '.', '.preview.')
+
+
+def find_ui_preview_file(model_path: str) -> str | None:
+    """Return the preview file the modernUI surfaces for `model_path`.
+
+    Iteration mirrors `ExtraNetworksPage.find_preview` at
+    `modules/ui_extra_networks.py:488` so that backfill embeds into the
+    same file the UI reads.
+    """
+    base = os.path.splitext(model_path)[0]
+    for ext in UI_PREVIEW_EXTS:
+        for mid in UI_PREVIEW_MIDS:
+            candidate = f'{base}{mid}{ext}'
+            if os.path.isfile(candidate):
+                return candidate
+    return None
+
+
+def backfill_preview_parameters(model_path: str, preview_url: str, meta: dict | None) -> bool:
+    """Embed Civitai meta into an existing preview file when it lacks parameters.
+
+    Used by the rescan path to retroactively populate preview metadata
+    without re-downloading bytes. The embed target is the file
+    `find_ui_preview_file` surfaces, which matches what the modernUI
+    displays. For video previews the embed target is the extracted
+    `<base>.thumb.jpg` frame instead of the unembeddable video file.
+    Returns True only if a new chunk was written; False for no-op (file
+    missing, no meta, already populated, embed failed).
+    """
+    if not meta or not model_path or not preview_url:
+        return False
+    ext = os.path.splitext(preview_url)[1].lower()
+    base = os.path.splitext(model_path)[0]
+    if ext in VIDEO_PREVIEW_EXTENSIONS:
+        if not os.path.exists(base + ext):
+            return False
+        preview_file = base + '.thumb.jpg'
+        if not os.path.exists(preview_file):
+            return False
+    else:
+        preview_file = find_ui_preview_file(model_path)
+        if not preview_file:
+            return False
+    if preview_has_parameters(preview_file):
+        return False
+    parameters = civitai_meta_to_parameters(meta)
+    if not parameters:
+        return False
+    if embed_preview_parameters(preview_file, parameters):
+        log.info(f'CivitAI preview backfill: file="{preview_file}"')
+        return True
+    return False
 
 
 # ---- Legacy compatibility functions ----
@@ -361,12 +664,12 @@ def download_civit_meta(model_path: str, model_id):
     return r.status_code, '', ''
 
 
-def download_civit_preview(model_path: str, preview_url: str):
+def download_civit_preview(model_path: str, preview_url: str, meta: dict | None = None):
     if model_path is None:
         return 500, '', ''
     ext = os.path.splitext(preview_url)[1]
     preview_file = os.path.splitext(model_path)[0] + ext
-    is_video = preview_file.lower().endswith('.mp4')
+    is_video = preview_file.lower().endswith(VIDEO_PREVIEW_EXTENSIONS)
     is_json = preview_file.lower().endswith('.json')
     if is_json:
         log.warning(f'CivitAI download: url="{preview_url}" skip json')
@@ -389,11 +692,27 @@ def download_civit_preview(model_path: str, preview_url: str):
         if is_video:
             from modules.civitai.video_helper import save_video_frame
             save_video_frame(preview_file)
+            if meta:
+                thumb_file = os.path.splitext(preview_file)[0] + '.thumb.jpg'
+                if os.path.exists(thumb_file):
+                    try:
+                        parameters = civitai_meta_to_parameters(meta)
+                        if parameters and embed_preview_parameters(thumb_file, parameters):
+                            log.debug(f'CivitAI preview embed: file="{thumb_file}"')
+                    except Exception as e:
+                        log.debug(f'CivitAI preview embed skipped: file="{thumb_file}" {e}')
         else:
             from PIL import Image
             img = Image.open(preview_file)
             log.info(f'CivitAI download: url={preview_url} file="{preview_file}" size={total_size} image={img.size}')
             img.close()
+            if meta:
+                try:
+                    parameters = civitai_meta_to_parameters(meta)
+                    if parameters and embed_preview_parameters(preview_file, parameters):
+                        log.debug(f'CivitAI preview embed: file="{preview_file}"')
+                except Exception as e:
+                    log.debug(f'CivitAI preview embed skipped: file="{preview_file}" {e}')
     except Exception as e:
         log.error(f'CivitAI download error: url={preview_url} file="{preview_file}" written={written} {e}')
         shared.state.end(jobid)

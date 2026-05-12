@@ -91,7 +91,7 @@ class Options:
             return
         return super().__setattr__(key, value)  # pylint: disable=super-with-arguments
 
-    def set(self, key, value):
+    def set(self, key, value, force=False):
         """sets an option and calls its onchange callback, returning True if the option changed and False otherwise"""
         if key in self.secrets:
             oldval = self.secrets.get(key, None)
@@ -103,7 +103,7 @@ class Options:
             else:
                 log.warning(f'Settings: key={key} value={value} unknown')
                 return False
-        if oldval == value:
+        if oldval == value and not force:
             return False
         try:
             setattr(self, key, value)

@@ -153,6 +153,7 @@ def patch_gradio():
     orig_cancel_tasks = gradio.utils.cancel_tasks
     orig_restore_session_state = gradio.route_utils.restore_session_state
     orig_call_prediction = gradio.queueing.Queue.call_prediction
+    orig_blocks_preprocess_data = gradio.blocks.Blocks.preprocess_data
 
     async def wrap_cancel_tasks(task_ids: set[str]):
         log.error(f'Gradio cancel: task={task_ids}')
@@ -200,9 +201,17 @@ def patch_gradio():
             log.error(f"Gradio queue: events={len(events)} batch={batch} error: {e}")
             raise
 
+    def wrap_blocks_preprocess_data(self, fn_index: int, inputs: list, state: dict):
+        try:
+            return orig_blocks_preprocess_data(self, fn_index, inputs, state)
+        except Exception as e:
+            log.error(f"Gradio preprocess: {e}")
+            raise
+
     gradio.queueing.Queue.call_prediction = wrap_call_prediction
     gradio.route_utils.restore_session_state = wrap_restore_session_state
     gradio.utils.cancel_tasks = wrap_cancel_tasks
+    gradio.blocks.Blocks.preprocess_data = wrap_blocks_preprocess_data
 
 
 def patch_gradio_future():

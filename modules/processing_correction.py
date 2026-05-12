@@ -212,6 +212,8 @@ def _count_steps_below(pipe, threshold):
 
 
 def correction_callback(p, timestep, kwargs, pipe=None, initial: bool = False, step: int = 0):
+    if pipe and pipe.__class__.__name__ in ['HiDreamO1Pipeline', 'HiDreamO1ImagePipeline']:
+        return kwargs
     if initial:
         if not any([p.hdr_clamp, p.hdr_mode, p.hdr_maximize, p.hdr_sharpen, p.hdr_color, p.hdr_brightness, p.hdr_tint_ratio]):
             p.correction_skip = True

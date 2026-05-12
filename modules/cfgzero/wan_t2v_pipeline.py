@@ -153,7 +153,7 @@ class WanCFGZeroPipeline(DiffusionPipeline, WanLoraLoaderMixin):
 
     def _get_t5_prompt_embeds(
         self,
-        prompt: Union[str, List[str]] = None,
+        prompt: Union[str, List[str]] | None = None,
         num_videos_per_prompt: int = 1,
         max_sequence_length: int = 226,
         device: Optional[torch.device] = None,
@@ -374,8 +374,8 @@ class WanCFGZeroPipeline(DiffusionPipeline, WanLoraLoaderMixin):
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def __call__(
         self,
-        prompt: Union[str, List[str]] = None,
-        negative_prompt: Union[str, List[str]] = None,
+        prompt: Union[str, List[str]] | None = None,
+        negative_prompt: Union[str, List[str]] | None = None,
         height: int = 480,
         width: int = 832,
         num_frames: int = 81,

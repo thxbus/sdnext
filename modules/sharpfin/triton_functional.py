@@ -403,7 +403,7 @@ def downscale_sparse(
         BLOCK_SIZE: int = 32,
         SPARSE_BLOCK_SIZE: int = 64,
     ) -> torch.Tensor:
-    kernel, window = _get_resize_kernel_triton(resize_kernel)
+    _kernel, window = _get_resize_kernel_triton(resize_kernel)
 
     T_W = target_size[-1]
     T_H = target_size[-2]
@@ -447,7 +447,7 @@ def downscale_triton(
         resize_kernel: ResizeKernel = ResizeKernel.MAGIC_KERNEL_SHARP_2021,
         do_gamma_handling=True,
     ) -> torch.Tensor:
-    kernel, window = _get_resize_kernel_triton(resize_kernel)
+    _kernel, window = _get_resize_kernel_triton(resize_kernel)
 
     y_s_w = compute_coord_grid(target_size[-1], image.shape[-1], window)
     y_s_h = compute_coord_grid(target_size[-2], image.shape[-2], window)
@@ -626,7 +626,7 @@ def downscale_sbsc(
         BLOCK_SIZE: int = 32,
         SPARSE_BLOCK_SIZE: int = 64,
     ) -> torch.Tensor:
-    kernel, window = _get_resize_kernel_triton(resize_kernel)
+    _kernel, window = _get_resize_kernel_triton(resize_kernel)
 
     T_W = target_size[-1]
     T_H = target_size[-2]
@@ -673,7 +673,7 @@ def downscale_sbsc_zerorhs(
         BLOCK_SIZE: int = 32,
         SPARSE_BLOCK_SIZE: int = 64,
     ) -> torch.Tensor:
-    kernel, window = _get_resize_kernel_triton(resize_kernel)
+    _kernel, window = _get_resize_kernel_triton(resize_kernel)
 
     T_W = target_size[-1]
     T_H = target_size[-2]

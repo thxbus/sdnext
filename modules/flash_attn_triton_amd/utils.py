@@ -110,7 +110,7 @@ class MetaData():
     def check_args(self, q, k, v, o):
         assert q.dim() == k.dim() and q.dim() == v.dim()
 
-        batch, nheads_q, nheads_k, head_size, _, _ = get_shapes_from_layout(q, k, self.layout, self.cu_seqlens_q, self.cu_seqlens_k, self.max_seqlens_q, self.max_seqlens_k)
+        _batch, nheads_q, nheads_k, _head_size, _, _ = get_shapes_from_layout(q, k, self.layout, self.cu_seqlens_q, self.cu_seqlens_k, self.max_seqlens_q, self.max_seqlens_k)
         if self.varlen:
             assert q.dim() == 3
             assert self.cu_seqlens_q is not None
@@ -310,7 +310,7 @@ def input_helper(
 
         return qkv, do, metadata
     else:
-        assert False, f"Unsupported packing mode: {packing}"
+        raise AssertionError(f"Unsupported packing mode: {packing}")
 
 # -------------------------------
 # Alibi
@@ -361,7 +361,7 @@ def get_shape_from_layout(
     elif layout == 'bshd':
         batch, max_seqlen_final, num_heads, head_dim = x.shape
     elif  layout == 'thd':
-        total_seqlen, num_heads, head_dim = x.shape
+        _total_seqlen, num_heads, head_dim = x.shape
         if cu_seqlens is None:
             raise ValueError("cu_seqlens must be provided for varlen (thd) layout")
         if max_seqlen is None:
@@ -369,7 +369,7 @@ def get_shape_from_layout(
 
         batch, max_seqlen_final, num_heads, head_dim = len(cu_seqlens) - 1, max_seqlen, num_heads, head_dim
     else:
-        assert False, "Got unsupported layout."
+        raise AssertionError("Got unsupported layout.")
 
     return batch, max_seqlen_final, num_heads, head_dim
 
@@ -392,7 +392,7 @@ def get_stride_from_layout(x: torch.Tensor, layout:Literal["bshd", "bhsd", "thd"
     elif layout == 'bshd':
         strides = (x.stride(0), x.stride(2), x.stride(1), x.stride(3))
     else:
-        assert False, 'Got unsupported layout.'
+        raise AssertionError('Got unsupported layout.')
     return strides
 
 def get_shape_and_strides_from_layout(x: torch.Tensor, layout: Literal["bshd", "bhsd", "thd"], cu_seqlens: Optional[torch.Tensor] = None, max_seqlen: Optional[int] = None):

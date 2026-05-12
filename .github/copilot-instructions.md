@@ -11,6 +11,7 @@ General app structure is:
 This file contains general guidelines for contributing to the SD.Next codebase, including conventions, tools, and project structure. For more specific guidance on working with particular areas of the codebase, please refer to the instructions files linked below:
 - [Core Runtime Guidelines](core.instructions.md): Use when editing Python core runtime code, startup flow, model loading, API internals, backend/device logic, or shared state in modules and pipelines.
 - [UI And Frontend Guidelines](ui.instructions.md): Use when editing frontend UI code, JavaScript, HTML, CSS, localization files, or built-in UI extensions including modernui and kanvas.
+- [Hint Typography Guidelines](hints.instructions.md): Use when editing hint text or other UI strings in localization JSON files (`html/locale_*.json`, `html/override_*.json`).
 
 ## Agent Guidelines
 
@@ -76,6 +77,10 @@ Use these repo-local skills for recurring SD.Next model integration work:
 - `port-model`  
   File: `.github/skills/port-model/SKILL.md`  
   Use when adding a new model family, porting a standalone script into a Diffusers pipeline, or wiring an upstream Diffusers model into SD.Next.
+
+- `port-pipeline`  
+  File: `.github/skills/port-pipeline/SKILL.md`  
+  Use when porting a custom model pipeline implementation to a Diffusers pipeline class with behavior parity and no hard-coded device or attention assumptions.
 
 - `debug-model`  
   File: `.github/skills/debug-model/SKILL.md`  

@@ -53,7 +53,7 @@ class SamDetector:
 
     def __call__(self, input_image: Union[np.ndarray, Image.Image]=None, detect_resolution=512, image_resolution=512, output_type="pil", **kwargs) -> Image.Image:
         if "image" in kwargs:
-            warnings.warn("image is deprecated, please use `input_image=...` instead.", DeprecationWarning)
+            warnings.warn("image is deprecated, please use `input_image=...` instead.", DeprecationWarning, stacklevel=2)
             input_image = kwargs.pop("image")
         if input_image is None:
             raise ValueError("input_image must be defined.")

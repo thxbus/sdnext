@@ -15,7 +15,7 @@ except Exception as e:
         raise
 
 
-def load_config(path: str, argv: List[str] = None):
+def load_config(path: str, argv: List[str] | None = None):
     """
     Load a configuration. Will resolve inheritance.
     """

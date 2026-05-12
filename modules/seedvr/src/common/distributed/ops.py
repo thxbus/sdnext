@@ -22,7 +22,7 @@ import torch
 import torch.distributed as dist
 from torch import Tensor
 
-from ..cache import Cache
+from modules.seedvr.src.common.cache import Cache
 from .advanced import (
     get_sequence_parallel_group,
     get_sequence_parallel_rank,

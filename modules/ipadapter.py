@@ -201,10 +201,10 @@ def load_image_encoder(pipe: DiffusionPipeline, adapter_names: list[str]):
             else:
                 if clip_subfolder is None:
                     image_encoder = transformers.CLIPVisionModelWithProjection.from_pretrained(clip_repo, torch_dtype=devices.dtype, cache_dir=shared.opts.hfcache_dir, use_safetensors=True, **offline_config)
-                    log.debug(f'IP adapter load: encoder="{clip_repo}" cls={pipe.image_encoder.__class__.__name__}')
+                    log.debug(f'IP adapter load: encoder="{clip_repo}" cls={image_encoder.__class__.__name__}')
                 else:
                     image_encoder = transformers.CLIPVisionModelWithProjection.from_pretrained(clip_repo, subfolder=clip_subfolder, torch_dtype=devices.dtype, cache_dir=shared.opts.hfcache_dir, use_safetensors=True, **offline_config)
-                    log.debug(f'IP adapter load: encoder="{clip_repo}/{clip_subfolder}" cls={pipe.image_encoder.__class__.__name__}')
+                    log.debug(f'IP adapter load: encoder="{clip_repo}/{clip_subfolder}" cls={image_encoder.__class__.__name__}')
             sd_models.clear_caches()
             image_encoder = model_quant.do_post_load_quant(image_encoder, allow=True)
             if hasattr(pipe, 'register_modules'):
@@ -212,12 +212,16 @@ def load_image_encoder(pipe: DiffusionPipeline, adapter_names: list[str]):
             else:
                 pipe.image_encoder = image_encoder
             clip_loaded = f'{clip_repo}/{clip_subfolder}'
+            pipe = sd_models.apply_balanced_offload(pipe, force=True)
         except Exception as e:
             log.error(f'IP adapter load: encoder="{clip_repo}/{clip_subfolder}" {e}')
             errors.display(e, 'IP adapter: type=encoder')
             return False
         shared.state.end(jobid)
     sd_models.move_model(pipe.image_encoder, devices.device)
+    if hasattr(pipe.unet, 'balanced_offload_device_map') and pipe.unet.balanced_offload_device_map.get('encoder_hid_proj', None) is None:
+        # image encoder patches unet, but diffusers creates full device map only during model load so if module is loaded later it will be missing
+        pipe.unet.balanced_offload_device_map['encoder_hid_proj'] = 0
     return True
 
 
@@ -235,13 +239,14 @@ def load_feature_extractor(pipe):
                 pipe.register_modules(feature_extractor=feature_extractor)
             else:
                 pipe.feature_extractor = feature_extractor
-                sd_models.apply_balanced_offload(pipe.feature_extractor)
+            pipe = sd_models.apply_balanced_offload(pipe, force=True, silent=True)
             log.debug(f'IP adapter load: extractor={pipe.feature_extractor.__class__.__name__}')
         except Exception as e:
             log.error(f'IP adapter load: extractor {e}')
             errors.display(e, 'IP adapter: type=extractor')
             return False
         shared.state.end(jobid)
+    sd_models.move_model(pipe.feature_extractor, devices.device)
     return True
 
 

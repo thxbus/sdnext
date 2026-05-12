@@ -31,6 +31,56 @@ def load_llama(diffusers_load_config=None):
     return text_encoder_4, tokenizer_4
 
 
+def load_hidream_o1(checkpoint_info, diffusers_load_config=None):
+    if diffusers_load_config is None:
+        diffusers_load_config = {}
+    repo_id = sd_models.path_to_repo(checkpoint_info)
+    sd_models.hf_auth_check(checkpoint_info)
+
+    from pipelines.hidream.hidream_o1 import HiDreamO1Pipeline, HiDreamO1ImagePipeline
+    from pipelines.hidream.qwen3_vl_transformers import HiDreamO1Qwen3VLTransformer
+    from pipelines.hidream.scheduler_flashfloweuler import FlashFlowMatchEulerDiscreteScheduler
+
+    load_args, quant_args = model_quant.get_dit_args(diffusers_load_config, module='Model', device_map=True, allow_quant=True)
+    log.debug(f'Load model: type=HiDreamO1 repo="{repo_id}" offload={shared.opts.diffusers_offload_mode} dtype={devices.dtype} quant="{model_quant.get_quant_type(quant_args)}" args={load_args}')
+
+    o1_load_config = diffusers_load_config.copy()
+    o1_load_config['trust_remote_code'] = True
+
+    transformer = HiDreamO1Qwen3VLTransformer.from_pretrained(
+        repo_id,
+        cache_dir=shared.opts.hfcache_dir,
+        trust_remote_code=True,
+        **load_args,
+        **quant_args,
+    )
+    if shared.opts.diffusers_offload_mode != 'none' and transformer is not None:
+        sd_models.move_model(transformer, devices.cpu)
+
+    processor = transformers.AutoProcessor.from_pretrained(
+        repo_id,
+        cache_dir=shared.opts.hfcache_dir,
+        trust_remote_code=True,
+    )
+    pipe = HiDreamO1Pipeline(
+        transformer=transformer,
+        processor=processor,
+        tokenizer=processor.tokenizer,
+        scheduler=FlashFlowMatchEulerDiscreteScheduler(num_train_timesteps=1000, shift=3.0, use_dynamic_shifting=False),
+    )
+    pipe.task_args = {
+        'output_type': 'pil',
+    }
+
+    del processor
+    del transformer
+    diffusers.pipelines.auto_pipeline.AUTO_TEXT2IMAGE_PIPELINES_MAPPING["hidream-o1"] = HiDreamO1Pipeline
+    diffusers.pipelines.auto_pipeline.AUTO_IMAGE2IMAGE_PIPELINES_MAPPING["hidream-o1"] = HiDreamO1ImagePipeline
+
+    devices.torch_gc()
+    return pipe
+
+
 def load_hidream(checkpoint_info, diffusers_load_config=None):
     if diffusers_load_config is None:
         diffusers_load_config = {}
@@ -52,7 +102,7 @@ def load_hidream(checkpoint_info, diffusers_load_config=None):
     if 'I1' in repo_id:
         cls = diffusers.HiDreamImagePipeline
     elif 'E1' in repo_id:
-        from pipelines.hidream.pipeline_hidream_image_editing import HiDreamImageEditingPipeline
+        from pipelines.hidream.hidream_e1 import HiDreamImageEditingPipeline
         cls = HiDreamImageEditingPipeline
         diffusers.pipelines.auto_pipeline.AUTO_TEXT2IMAGE_PIPELINES_MAPPING["hidream-e1"] = diffusers.HiDreamImagePipeline
         diffusers.pipelines.auto_pipeline.AUTO_IMAGE2IMAGE_PIPELINES_MAPPING["hidream-e1"] = HiDreamImageEditingPipeline

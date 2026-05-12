@@ -430,7 +430,7 @@ class UltraFluxPipeline(DiffusionPipeline, FluxLoraLoaderMixin):
 
     @staticmethod
     def _unpack_latents(latents, height, width, vae_scale_factor):
-        batch_size, num_patches, channels = latents.shape
+        batch_size, _num_patches, channels = latents.shape
 
         height = height // vae_scale_factor
         width = width // vae_scale_factor

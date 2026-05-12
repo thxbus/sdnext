@@ -1,37 +1,28 @@
 # Change Log for SD.Next
 
-## Update for 2026-05-08
+## Update for 2026-05-12
 
-### Highlights for 2026-05-08
+### Highlights for 2026-05-12
 
 *What's New?*
-- Image editing models now can work with multiple image inputs!  
-- New models: *JoyAI Image Edit*, *Step1X-Edit*, *VIBE Image Edit* and *UltraFlux* plus enhanced capabilities for *Anima*, *Ernie-Image*, *LTX* and *Chroma* models  
-- UI improvements accross the board: *Main panels*, *Gallery*, *Kanvas*, and more
+- Image editing models now can work with multiple image inputs!
+- Six new models: *HiDream-O1 Image*, *JoyAI Image Edit*, *Step1X-Edit*, *VIBE Image Edit* and *UltraFlux*
+- Enhanced capabilities for *Anima*, *Ernie-Image*, *LTX*, *Flux.2* and *Chroma* models
+- Enhanced *LoRA* capabilities in many models
+- UI improvements accross the board: *Main panels*, *Gallery*, *Kanvas*, *Networks*, and more...
 
 For full details, see [ChangeLog](https://github.com/vladmandic/automatic/blob/master/CHANGELOG.md)  
 
 [ReadMe](https://github.com/vladmandic/automatic/blob/master/README.md) | [ChangeLog](https://github.com/vladmandic/automatic/blob/master/CHANGELOG.md) | [Docs](https://vladmandic.github.io/sdnext-docs/) | [WiKi](https://github.com/vladmandic/automatic/wiki) | [Discord](https://discord.com/invite/sd-next-federal-batch-inspectors-1101998836328697867) | [Sponsor](https://github.com/sponsors/vladmandic)  
 
-### Details for 2026-05-08
+### Details for 2026-05-12
 
-- **Features**
-  - **Multi-image** workflows!  
-    for models that support multiple images as inputs, you can now add multiple stages in Kanvas  
-    prompts like "*place character from first image, add background from second image, render in style from third image*" are now possible  
-  - option *inputs -> skip processing* to force images to passed to model as-is without any pre-processing  
-    examples of models that support multi-inputs: *qwen-image-edit, flux.2, google-gemini*  
-  - **Anima** support for *img2img* and *inpaint* workflows
-  - **Ernie-Image** add *LoRA* support, *img2img* and *inpaint* workflows
-  - **LTX** support for *audio* generation
-  - **Chroma** add *LoRA* support
-  - **Prompt enhance** add info to image metadata  
-  - custom **VAE** loader for all pipelines  
-    *note*: vae still needs to be compatible with the model  
-  - [SD Ultimate Upscale](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)  
-    still a popular method for upscaling, but has not been updated nor maintained for a while  
-    so now its modernized and fully integrated as a built-in script!  
 - **Models**
+  - [HiDream-O1-Image](https://huggingface.co/HiDream-ai/HiDream-O1-Image) pixel-level unified transformer model support  
+    HiDream-O1 is based on a single custom *Qwen3-VL* 8.8B 35GB component  
+    includes both **HiDream-O1-Image** *(base)* and **HiDream-O1-Image-Dev** *(distilled*)* variants  
+    includes *T2I* and *I2I edit* capabilities and resolutions up to 2048px   
+    *note*: use steps:50 for base and steps:28 for dev variants  
   - [JoyAI Image Edit](https://huggingface.co/jdopensource/JoyAI-Image-Edit-Diffusers) image-editing model support  
     includes multimodal conditioning using *Qwen3-VL* with a dedicated *JoyImageEdit* diffusion transformer  
     *note* this is a large model at 50GB so use of agressive quantization is recommended  
@@ -46,6 +37,25 @@ For full details, see [ChangeLog](https://github.com/vladmandic/automatic/blob/m
     *note* as with most multi-modal/unified models, it needs higher step count (recommended is 64 steps) and uses quite a lot of VRAM, so use with caution!  
   - [Owen777 UltraFlux-v1](https://huggingface.co/Owen777/UltraFlux-v1) native 4K text-to-image model based on *FLUX.1-dev*  
     *note*: UltraFlux is capable of rendering images up to 4K resolution, but it doesnt mean it will do that on any hardware - it will depend on your VRAM!  
+- **Features**
+  - **Multi-image** workflows!  
+    for models that support multiple images as inputs, you can now add multiple stages in Kanvas  
+    prompts like "*place character from first image, add background from second image, render in style from third image*" are now possible  
+  - option *inputs -> skip processing* to force images to passed to model as-is without any pre-processing  
+    examples of models that support multi-inputs: *qwen-image-edit, flux.2, google-gemini*  
+  - [SD Ultimate Upscale](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)  
+    still a popular method for upscaling, but has not been updated nor maintained for a while  
+    so now its modernized and fully integrated as a built-in script!  
+  - **LTX** support for *audio* generation
+  - **Anima** support for *img2img* and *inpaint* workflows
+  - **Ernie-Image** add native *LoRA* support, *img2img* and *inpaint* workflows
+  - **Chroma** add native *LoRA* support
+  - **Flux.2** add native *LoRA* support
+  - **Prompt enhance** add info to image metadata  
+  - custom **VAE** loader for all pipelines  
+    *note*: vae still needs to be compatible with the model  
+  - **CivitAI** downloaded thumbnails now include metadata  
+  - **Installer** support for `git+http` style references
 - **UI**
   - **Networks** using networks to load model or auto-download a reference model will now be reflected in the UI  
   - ability to manually reorient *input/output* panels
@@ -58,16 +68,22 @@ For full details, see [ChangeLog](https://github.com/vladmandic/automatic/blob/m
   - **Gallery** add quick info/download/delete buttons on thumbnail hover
   - **Models** sortable columns, ability to remove a model  
     applies to models as well as huggingface cache entries  
+  - **Server Info** add button *copy-to-clipboard*  
+    useful for sharing your system info when asking for help in discord or github  
 - **Control**
   - remove buttons: *input/control/process*
   - move params *control input type* to control menu section
   - remove "processed preview" from ui  
     preprocessor output can still be generated by clicking preview button in in control unit and it will render into normal output area  
 - **Internal**
+  - `offload` auto-reapply hook on error  
   - refactor `pip` installer, thanks @awsr
   - remove obsolete `lora` stepwise and functional code, thanks @awsr
   - interrupt model loading between components
   - patch `rich` for cleaner exception logging
+  - lint `ruff` strict and reduce exceptions
+  - lint `pylint` improvements
+  - lint `ty` readiness
 - **Fixes**
   - add missing `jquery` and `sparkline` js scripts
   - save handle already decoded images
@@ -84,6 +100,14 @@ For full details, see [ChangeLog](https://github.com/vladmandic/automatic/blob/m
   - cache network thumbnails
   - `scripts` corrupting control ui state
   - avoid `callback` duplicate registrations
+  - pipeline task change causing loss of info on loaded `lora`
+  - `detailer` handle `lora` internally
+  - vae preview flashes previous image
+  - `torch.compile` improvements
+  - `gradio` preprocess exception handling
+  - `ipadapters` with offloading
+  - `kanvas` outpaint
+  - `network` preview handle invalid image
 
 ## Update for 2026-04-28
 

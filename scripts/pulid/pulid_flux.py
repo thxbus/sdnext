@@ -6,7 +6,7 @@ from modules.logger import log
 
 
 def apply_flux(pipe: FluxPipeline):
-    if not hasattr(pipe, 'transformer') or not 'Nunchaku' in pipe.transformer.__class__.__name__:
+    if not hasattr(pipe, 'transformer') or 'Nunchaku' not in pipe.transformer.__class__.__name__:
         log.error('PuLID: flux support requires nunchaku')
         return pipe
 

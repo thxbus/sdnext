@@ -112,7 +112,7 @@ def network_calc_weights(self: torch.nn.Conv2d | torch.nn.Linear | torch.nn.Grou
                 else:
                     batch_updown = updown.to(devices.device)
             if ex_bias is not None:
-                if batch_ex_bias:
+                if batch_ex_bias is not None:
                     batch_ex_bias += ex_bias.to(batch_ex_bias.device)
                 else:
                     batch_ex_bias = ex_bias.to(devices.device)

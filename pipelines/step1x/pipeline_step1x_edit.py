@@ -507,7 +507,7 @@ User Prompt:'''
     @staticmethod
     # Copied from diffusers.pipelines.flux.pipeline_flux.FluxPipeline._unpack_latents
     def _unpack_latents(latents, height, width, vae_scale_factor):
-        batch_size, num_patches, channels = latents.shape
+        batch_size, _num_patches, channels = latents.shape
 
         # VAE applies 8x compression on images but we must also account for packing which requires
         # latent height and width to be divisible by 2.

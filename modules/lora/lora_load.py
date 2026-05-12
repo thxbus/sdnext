@@ -101,6 +101,12 @@ def load_safetensors(name, network_on_disk: network.NetworkOnDisk) -> network.Ne
         if chroma_net is not None:
             lora_cache[name] = chroma_net
         return chroma_net
+    if shared.sd_model_type == 'f2':
+        from pipelines.flux import flux2_lora
+        f2_net = flux2_lora.try_load(name, network_on_disk, shared.opts.extra_networks_default_multiplier)
+        if f2_net is not None:
+            lora_cache[name] = f2_net
+        return f2_net
     net = network.Network(name, network_on_disk)
     net.mtime = os.path.getmtime(network_on_disk.filename)
     state_dict = sd_models.read_state_dict(network_on_disk.filename, what='network')
@@ -307,15 +313,9 @@ def network_load(names, te_multipliers=None, unet_multipliers=None, dyn_dims=Non
                 lora_module = lora_modules[i] if lora_modules and len(lora_modules) > i else None
                 if recompile_model and shared.compiled_model_state is not None:
                     shared.compiled_model_state.lora_model.append(f"{name}:{lora_scale}")
-                lora_method = lora_overrides.get_method(shorthash)
+                lora_method, lora_method_reason = lora_overrides.get_method(shorthash)
                 if lora_method == 'diffusers':
-                    if shared.sd_model_type == 'f2':
-                        from pipelines.flux import flux2_lora
-                        net = flux2_lora.try_load_lokr(name, network_on_disk, lora_scale)
-                        if net is None and not shared.opts.lora_force_diffusers:
-                            net = flux2_lora.try_load_lora(name, network_on_disk, lora_scale)
-                    if net is None:
-                        net = lora_diffusers.load_diffusers(name, network_on_disk, lora_scale, lora_module)
+                    net = lora_diffusers.load_diffusers(name, network_on_disk, lora_scale, lora_module, reason=lora_method_reason)
                 elif lora_method == 'nunchaku':
                     pass # handled directly from extra_networks_lora.load_nunchaku
                 else:

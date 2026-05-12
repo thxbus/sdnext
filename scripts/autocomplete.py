@@ -27,7 +27,7 @@ def get_config_json():
         "autocomplete_active": bool(shared.opts.data.get('autocomplete_active', False)),
         "autocomplete_enabled": enabled,
         "autocomplete_min_chars": shared.opts.data.get('autocomplete_min_chars', 3),
-        "autocomplete_replace_underscores": shared.opts.data.get('autocomplete_replace_underscores', True),
+        "autocomplete_keep_underscores": shared.opts.data.get('autocomplete_keep_underscores', False),
         "autocomplete_append_comma": shared.opts.data.get('autocomplete_append_comma', True),
         "autocomplete_at_prefix_artist": shared.opts.data.get('autocomplete_at_prefix_artist', False),
         "autocomplete_translations": bool(shared.opts.data.get('autocomplete_translations', False)),
@@ -52,8 +52,8 @@ def on_min_chars_change(value):
     return get_config_json()
 
 
-def on_replace_underscores_change(value):
-    shared.opts.data['autocomplete_replace_underscores'] = bool(value)
+def on_keep_underscores_change(value):
+    shared.opts.data['autocomplete_keep_underscores'] = bool(value)
     shared.opts.save(silent=True)
     return get_config_json()
 
@@ -180,10 +180,10 @@ class AutocompleteScript(scripts_manager.Script):
                 refresh_btn = ToolButton(value=symbols.refresh, elem_id=self.elem_id("refresh"))
                 update_btn = ToolButton(value=symbols.save, elem_id=self.elem_id("update"))
             with gr.Row():
-                replace_underscores = gr.Checkbox(
-                    label="Replace underscores",
-                    value=shared.opts.data.get('autocomplete_replace_underscores', True),
-                    elem_id=self.elem_id("replace_underscores"),
+                keep_underscores = gr.Checkbox(
+                    label="Keep underscores",
+                    value=shared.opts.data.get('autocomplete_keep_underscores', False),
+                    elem_id=self.elem_id("keep_underscores"),
                 )
                 append_comma = gr.Checkbox(
                     label="Comma separator",
@@ -217,14 +217,14 @@ class AutocompleteScript(scripts_manager.Script):
         active_cb.change(fn=on_active_change, inputs=[active_cb], outputs=[config_json, status])
         enabled_dd.change(fn=on_enabled_change, inputs=[enabled_dd], outputs=[config_json, status])
         min_chars.change(fn=on_min_chars_change, inputs=[min_chars], outputs=[config_json])
-        replace_underscores.change(fn=on_replace_underscores_change, inputs=[replace_underscores], outputs=[config_json])
+        keep_underscores.change(fn=on_keep_underscores_change, inputs=[keep_underscores], outputs=[config_json])
         append_comma.change(fn=on_append_comma_change, inputs=[append_comma], outputs=[config_json])
         at_prefix_artist.change(fn=on_at_prefix_artist_change, inputs=[at_prefix_artist], outputs=[config_json])
         translations_cb.change(fn=on_translations_change, inputs=[translations_cb], outputs=[config_json])
         refresh_btn.click(fn=on_refresh, inputs=[], outputs=[enabled_dd, status])
         update_btn.click(fn=on_update, inputs=[enabled_dd], outputs=[status])
 
-        for comp in [enabled_dd, min_chars, replace_underscores, append_comma, at_prefix_artist, translations_cb, config_json, status]:
+        for comp in [enabled_dd, min_chars, keep_underscores, append_comma, at_prefix_artist, translations_cb, config_json, status]:
             comp.do_not_save_to_config = True
 
-        return [active_cb, enabled_dd, min_chars, replace_underscores, append_comma, at_prefix_artist, translations_cb, config_json]
+        return [active_cb, enabled_dd, min_chars, keep_underscores, append_comma, at_prefix_artist, translations_cb, config_json]

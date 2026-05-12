@@ -70,7 +70,7 @@ def prepare_prompts(p, init_image, prompt:str, section_prompt:str, num_sections:
     p.prompt = shared.prompt_styles.apply_styles_to_prompt(p.prompt, p.styles)
     p.negative_prompt = shared.prompt_styles.apply_negative_styles_to_prompt(p.negative_prompt, p.styles)
     shared.prompt_styles.apply_styles_to_extra(p)
-    p.prompts, p.network_data = extra_networks.parse_prompts([p.prompt])
+    p.prompts, p.network_data = extra_networks.parse_prompts([p.prompt], p.network_data)
     extra_networks.activate(p)
     prompt = p.prompts[0]
     generated_prompts = [''] * num_sections

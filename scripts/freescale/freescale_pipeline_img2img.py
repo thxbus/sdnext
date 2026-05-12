@@ -675,7 +675,7 @@ class StableDiffusionXLFreeScaleImg2Img(DiffusionPipeline, FromSingleFileMixin, 
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def __call__(
         self,
-        prompt: Union[str, List[str]] = None,
+        prompt: Union[str, List[str]] | None = None,
         prompt_2: Optional[Union[str, List[str]]] = None,
         height: Optional[int] = None,
         width: Optional[int] = None,
@@ -1210,12 +1210,12 @@ class StableDiffusionXLFreeScaleImg2Img(DiffusionPipeline, FromSingleFileMixin, 
     def save_lora_weights(
         self,
         save_directory: Union[str, os.PathLike],
-        unet_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] = None,
-        text_encoder_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] = None,
-        text_encoder_2_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] = None,
+        unet_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] | None = None,
+        text_encoder_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] | None = None,
+        text_encoder_2_lora_layers: Dict[str, Union[torch.nn.Module, torch.Tensor]] | None = None,
         is_main_process: bool = True,
-        weight_name: str = None,
-        save_function: Callable = None,
+        weight_name: str | None = None,
+        save_function: Callable | None = None,
         safe_serialization: bool = True,
     ):
         state_dict = {}

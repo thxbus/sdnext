@@ -146,7 +146,7 @@ class LinearSplitter(nn.Module):
         S = self._net(x)
         eps = 1e-3
         S = S + eps
-        n, c, h, w = S.shape
+        n, _c, h, w = S.shape
         S = S.view(n, self.prev_nbins, self.split_factor, h, w)
         S_normed = S / S.sum(dim=2, keepdim=True)  # fractional splits
 

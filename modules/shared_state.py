@@ -270,9 +270,8 @@ class State:
 
     def do_set_current_image(self):
         from modules import shared, images, sd_samplers_common
-        if (self.current_latent is None) or self.disable_preview or (self.preview_job == self.job_no):
+        if self.disable_preview or (self.preview_job == self.job_no):
             return False
-        self.preview_job = self.job_no
 
         if (shared.opts.show_progress_type == "None") and (shared.history.last_image is not None):
             last_image = images.image_grid(shared.history.last_image)
@@ -280,27 +279,37 @@ class State:
             self.preview_job = -1
             return True
 
-        try:
-            sample = self.current_latent
-            self.current_image_sampling_step = self.sampling_step
+        if self.current_latent is not None:
             try:
-                if self.current_noise_pred is not None and self.current_sigma is not None and self.current_sigma_next is not None:
-                    original_sample = sample - (self.current_noise_pred * (self.current_sigma_next-self.current_sigma))
-                    if self.prediction_type in {"epsilon", "flow_prediction"}:
-                        sample = original_sample - (self.current_noise_pred * self.current_sigma)
-                    elif self.prediction_type == "v_prediction":
-                        sample = self.current_noise_pred * (-self.current_sigma / (self.current_sigma**2 + 1) ** 0.5) + (original_sample / (self.current_sigma**2 + 1)) # pylint: disable=invalid-unary-operand-type
-            except Exception:
-                pass # ignore sigma errors
-            image = sd_samplers_common.samples_to_image_grid(sample)
-            self.assign_current_image(image)
+                self.preview_job = self.job_no
+                sample = self.current_latent
+                self.current_image_sampling_step = self.sampling_step
+                try:
+                    if self.current_noise_pred is not None and self.current_sigma is not None and self.current_sigma_next is not None:
+                        original_sample = sample - (self.current_noise_pred * (self.current_sigma_next-self.current_sigma))
+                        if self.prediction_type in {"epsilon", "flow_prediction"}:
+                            sample = original_sample - (self.current_noise_pred * self.current_sigma)
+                        elif self.prediction_type == "v_prediction":
+                            sample = self.current_noise_pred * (-self.current_sigma / (self.current_sigma**2 + 1) ** 0.5) + (original_sample / (self.current_sigma**2 + 1)) # pylint: disable=invalid-unary-operand-type
+                except Exception:
+                    pass # ignore sigma errors
+                image = sd_samplers_common.samples_to_image_grid(sample)
+                self.assign_current_image(image)
+                self.preview_job = -1
+                return True
+            except Exception as e:
+                self.preview_job = -1
+                log.error(f'State image: last={self.id_live_preview} step={self.sampling_step} {e}')
+                display(e, 'State image')
+                return False
+        elif self.current_image is not None:
+            self.preview_job = self.job_no
+            self.assign_current_image(self.current_image)
             self.preview_job = -1
             return True
-        except Exception as e:
-            self.preview_job = -1
-            log.error(f'State image: last={self.id_live_preview} step={self.sampling_step} {e}')
-            display(e, 'State image')
-            return False
+        else:
+            pass
+        return False
 
     def assign_current_image(self, image):
         self.current_image = image

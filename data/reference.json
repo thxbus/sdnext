@@ -669,6 +669,15 @@
     "size": 58.4,
     "date": "2025 April"
   },
+  "HiDream-O1 Image": {
+    "path": "HiDream-ai/HiDream-O1-Image",
+    "desc": "HiDream-O1-Image is an 8B pixel-level unified transformer model for text-to-image generation, instruction editing, and multi-reference personalization up to 2048x2048.",
+    "preview": "HiDream-ai--HiDream-O1-Image.jpg",
+    "skip": true,
+    "extras": "sampler: Default",
+    "size": 35.2,
+    "date": "2026 May"
+  },
   "HiDream-E1 Full": {
     "path": "HiDream-ai/HiDream-E1-Full",
     "desc": "HiDream-E1 is an image editing model built on HiDream-I1.",
@@ -947,7 +956,7 @@
 
   "StepFun Step1X-Edit v1.1": {
     "path": "stepfun-ai/Step1X-Edit-v1p1-diffusers",
-    "preview": "stepfun-ai--Step1X-Edit-v1p1.jpg",
+    "preview": "stepfun-ai--Step1X-Edit-v1p1-diffusers.jpg",
     "desc": "Multimodal image editing model using Step1X transformer architecture with Qwen2.5-VL text encoding, trained with Flow Matching scheduler for high-quality in-context image edits and refinements.",
     "skip": true,
     "extras": "sampler: Default",

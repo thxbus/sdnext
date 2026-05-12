@@ -7,7 +7,10 @@
 - Chat-based interface, @vladmandic
 - Control tab verify overrides handling, @vladmandic
 - Reimplement `llama` remover for Kanvas, @vladmandic
+- Implement [pruna](https://github.com/PrunaAI/pruna), @vladmandic
+- Change params to default, @vladmandic
 
+- Detailer postprocessing, @CalamitousFelicitousness
 - Cloud providers, @CalamitousFelicitousness
 - Video processing add full API support, @CalamitousFelicitousness
 

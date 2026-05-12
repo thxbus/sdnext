@@ -36,6 +36,16 @@
     "skip": true,
     "extras": "sampler: Default, cfg_scale: 4.5"
   },
+  "HiDream-O1 Image Dev": {
+    "path": "HiDream-ai/HiDream-O1-Image-Dev",
+    "preview": "HiDream-ai--HiDream-O1-Image-Dev.jpg",
+    "desc": "HiDream-O1-Image-Dev is the distilled 8B HiDream-O1 variant tuned for 28-step fast generation using flash flow scheduling.",
+    "skip": true,
+    "extras": "sampler: Flash, steps: 28, cfg_scale: 0.0",
+    "size": 35.2,
+    "tags": "distilled",
+    "date": "2026 May"
+  },
   "Qwen-Image-Lightning": {
     "path": "vladmandic/Qwen-Lightning",
     "preview": "vladmandic--Qwen-Lightning.jpg",

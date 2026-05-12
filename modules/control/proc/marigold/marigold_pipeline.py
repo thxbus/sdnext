@@ -113,7 +113,7 @@ class MarigoldPipeline(DiffusionPipeline):
         batch_size: int = 0,
         color_map: str = "Spectral",
         show_progress_bar: bool = True,
-        ensemble_kwargs: Dict = None,
+        ensemble_kwargs: Dict | None = None,
     ) -> MarigoldDepthOutput:
         """
         Function invoked when calling the pipeline.

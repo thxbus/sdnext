@@ -54,7 +54,7 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
             Any other scheduler that if specified, the algorithm becomes `solver_p + UniC`.
         use_karras_sigmas (`bool`, *optional*, defaults to `False`):
             Whether to use Karras sigmas for step sizes in the noise schedule during the sampling process. If `True`,
-            the sigmas are determined according to a sequence of noise levels {σi}.
+            the sigmas are determined according to a sequence of noise levels {sigma_i}.
         use_exponential_sigmas (`bool`, *optional*, defaults to `False`):
             Whether to use exponential sigmas for step sizes in the noise schedule during the sampling process.
         timestep_spacing (`str`, defaults to `"linspace"`):
@@ -311,7 +311,7 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
             )
 
         sigma = self.sigmas[self.step_index]
-        alpha_t, sigma_t = self._sigma_to_alpha_sigma_t(sigma)
+        _alpha_t, sigma_t = self._sigma_to_alpha_sigma_t(sigma)
 
         if self.predict_x0:
             if self.config.prediction_type == "flow_prediction":
@@ -350,7 +350,7 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
         model_output: torch.Tensor,
         *args,
         sample: torch.Tensor = None,
-        order: int = None,  # pyright: ignore
+        order: int | None = None,  # pyright: ignore
         **kwargs,
     ) -> torch.Tensor:
         """
@@ -439,7 +439,7 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
         elif self.config.solver_type == "bh2":
             B_h = torch.expm1(hh)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
 
         for i in range(1, order + 1):
             R.append(torch.pow(rks, i - 1))
@@ -487,7 +487,7 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
         *args,
         last_sample: torch.Tensor = None,
         this_sample: torch.Tensor = None,
-        order: int = None,  # pyright: ignore
+        order: int | None = None,  # pyright: ignore
         **kwargs,
     ) -> torch.Tensor:
         """
@@ -582,7 +582,7 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
         elif self.config.solver_type == "bh2":
             B_h = torch.expm1(hh)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
 
         for i in range(1, order + 1):
             R.append(torch.pow(rks, i - 1))
@@ -654,8 +654,14 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
              model_output: torch.Tensor,
              timestep: Union[int, torch.Tensor],
              sample: torch.Tensor,
+             s_churn: float = 0.0,
+             s_tmin: float = 0.0,
+             s_tmax: float = float("inf"),
+             s_noise: float = 1.0,
+             noise_clip_std: float = 0.0,
              return_dict: bool = True,
-             generator=None) -> Union[SchedulerOutput, Tuple]:
+             generator=None,
+             **kwargs) -> Union[SchedulerOutput, Tuple]:
         """
         Predict the sample from the previous timestep by reversing the SDE. This function propagates the sample with
         the multistep UniPC.

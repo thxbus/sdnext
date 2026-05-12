@@ -304,7 +304,7 @@ class RESUnifiedScheduler(SchedulerMixin, ConfigMixin):
             return SchedulerOutput(prev_sample=x_next)
 
         # GET COEFFICIENTS
-        b, h_val = self._get_coefficients(sigma, sigma_next)
+        b, _h_val = self._get_coefficients(sigma, sigma_next)
 
         if len(b) == 1:
             res = b[0] * x0

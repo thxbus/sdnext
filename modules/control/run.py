@@ -281,7 +281,7 @@ def control_process(p: StableDiffusionProcessingControl,
                     input_image: Image.Image = None, # only used for tiling, otherwise processor.preprocess_image set p params
                    ):
     debug_log(f'Control exec pipeline: task={sd_models.get_diffusers_task(pipe)} class={pipe.__class__}')
-    if sd_models.get_diffusers_task(pipe) != sd_models.DiffusersTaskType.TEXT_2_IMAGE: # force vae back to gpu if not in txt2img mode
+    if sd_models.get_diffusers_task(pipe) != sd_models.DiffusersTaskType.TEXT_2_IMAGE and hasattr(pipe, 'vae'): # force vae back to gpu if not in txt2img mode
         sd_models.move_model(pipe.vae, devices.device)
 
     # what are we doing?
@@ -852,7 +852,7 @@ def control_run(state: str = '', # pylint: disable=keyword-arg-before-vararg
     html_txt = f'<p>Ready {image_txt}</p>' if image_txt != '' else ''
     if len(info_txt) > 0:
         html_txt = html_txt + infotext_to_html(info_txt[0])
+    result = (output_images, blended_image, html_txt, output_filename)
     if is_generator:
-        yield (output_images, blended_image, html_txt, output_filename)
-    else:
-        return (output_images, blended_image, html_txt, output_filename)
+        yield result
+    return result

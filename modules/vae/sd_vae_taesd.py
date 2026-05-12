@@ -45,7 +45,6 @@ prev_cls = ''
 prev_type = ''
 prev_model = ''
 lock = threading.Lock()
-supported = ['sd', 'sdxl', 'sd3', 'f1', 'f2', 'h1', 'zimage', 'lumina2', 'hunyuanvideo', 'wanai', 'chrono', 'cosmos', 'anima', 'mochivideo', 'pixartsigma', 'pixartalpha', 'hunyuandit', 'omnigen', 'qwen', 'longcat', 'omnigen2', 'flite', 'ovis', 'kandinsky5', 'glmimage', 'cogview3', 'cogview4']
 
 
 def warn_once(msg, variant=None):
@@ -57,15 +56,18 @@ def warn_once(msg, variant=None):
     return Image.new('RGB', (8, 8), color = (0, 0, 0))
 
 
-def get_model(model_type = 'decoder', variant = None):
-    global prev_cls, prev_type, prev_model, prev_warnings # pylint: disable=global-statement
-    model_cls = shared.sd_model_type
-    if model_cls is None or model_cls == 'none':
-        return None, variant
-    elif model_cls in {'ldm', 'pixartalpha'}:
+def get_model(model_cls, variant=None):
+    if variant is not None:
+        pass
+    if model_cls in {'sd'}:
         model_cls = 'sd'
+        variant = shared.opts.taesd_variant
+    elif model_cls in {'sdxl', 'ldm', 'pixartalpha'}:
+        model_cls = 'sdxl'
+        variant = shared.opts.taesd_variant
     elif model_cls in {'pixartsigma', 'hunyuandit', 'omnigen', 'auraflow'}:
         model_cls = 'sdxl'
+        variant = shared.opts.taesd_variant
     elif model_cls in {'f1', 'h1', 'zimage', 'lumina2', 'chroma', 'longcat', 'omnigen2', 'flite', 'ovis', 'kandinsky5', 'glmimage', 'cogview3', 'cogview4', 'ultraflux'}:
         model_cls = 'f1'
         variant = 'TAE FLUX.1'
@@ -74,12 +76,24 @@ def get_model(model_type = 'decoder', variant = None):
         variant = 'TAE FLUX.2'
     elif model_cls in {'sd3'}:
         variant = 'TAE SD3'
-    elif model_cls in {'wanai', 'qwen', 'chrono', 'cosmos', 'anima', 'fibo'}:
-        variant = variant or 'TAE WanVideo'
-    elif model_cls not in supported:
+    elif model_cls in {'wanai', 'qwen', 'chrono', 'cosmos', 'anima', 'fibo', 'joy'}:
+        variant = 'TAE WanVideo'
+    else:
         warn_once(f'cls={shared.sd_model.__class__.__name__} type={shared.sd_model_type} unsuppported', variant=variant)
+        return model_cls, None
+    if debug:
+        log.debug(f'TAESD detect: cls={model_cls} variant={variant}')
+    return model_cls, variant
+
+
+def load_model(model_type = 'decoder', variant = None):
+    global prev_cls, prev_type, prev_model, prev_warnings # pylint: disable=global-statement
+    model_cls = shared.sd_model_type
+    if model_cls is None or model_cls == 'none':
         return None, variant
-    variant = variant or shared.opts.taesd_variant
+    model_cls, variant = get_model(model_cls, variant)
+    if model_cls is None or variant is None:
+        return None, variant
     folder = os.path.join(paths.models_path, "TAESD")
     dtype = devices.dtype_vae if devices.dtype_vae != torch.bfloat16 else torch.float16 # taesd does not support bf16
     os.makedirs(folder, exist_ok=True)
@@ -154,7 +168,7 @@ def decode(latents):
     global first_run # pylint: disable=global-statement
     with lock:
         try:
-            vae, variant = get_model(model_type='decoder')
+            vae, variant = load_model(model_type='decoder')
             if vae is None or max(latents.shape) > 256: # safetey check of large tensors
                 return latents
         except Exception as e:
@@ -192,7 +206,7 @@ def decode(latents):
 
 def encode(image):
     with lock:
-        vae, variant = get_model(model_type='encoder')
+        vae, variant = load_model(model_type='encoder')
         if vae is None:
             return image
         try:

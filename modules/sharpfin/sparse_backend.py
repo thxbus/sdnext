@@ -427,7 +427,7 @@ def _dds_kernel(
         b_block_offset = tl.load(block_offsets_t + block_inx)
         ptr_B = B + b_block_offset * BLOCK_ELEMENTS
 
-        for sub_block_inx in range(nsub_blocks):
+        for _sub_block_inx in range(nsub_blocks):
             a = tl.load(ptr_A)
             b = tl.load(ptr_B)
 
@@ -510,7 +510,7 @@ def triton_dds(
 
     trans_B = not rhs.is_contiguous()
     trans_A = (lhs.stride(-2) > 1 and lhs.stride(-1) > 1)
-    assert trans_A == False, trans_B == False
+    assert not trans_A, not trans_B
 
     assert lhs.shape[-1] <= rhs.shape[0], "incompatible dimensions"
 
@@ -583,7 +583,7 @@ def _dds_sbsc_kernel(
     acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
 
 
-    for block_slice in range(nsub_blocks):
+    for _block_slice in range(nsub_blocks):
         a = tl.load(A_block_ptr, eviction_policy='evict_first', boundary_check=(0,), padding_option='zero')
         b = tl.load(B_block_ptr, eviction_policy='evict_last')
 
@@ -787,7 +787,7 @@ def triton_dds_zerorhs_sbsc(
 
     PAD = math.ceil((kernel_window - 0.5) / k)
 
-    offset, block_height, num_blocks, col_width = block_specs
+    offset, block_height, _num_blocks, col_width = block_specs
 
     assert lhs.ndim == 3
     CH = lhs.shape[0]

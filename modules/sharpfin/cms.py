@@ -131,7 +131,7 @@ def apply_srgb(
                             flags=flags
                         )
                     else:
-                        img = cast(Image, profileToProfile(
+                        img = cast('Image', profileToProfile(
                             img,
                             profile,
                             _SRGB,
@@ -144,14 +144,14 @@ def apply_srgb(
                         f"unsupported intent on {path} assuming sRGB: {cms_info}",
                         path=path,
                         cms_info=cms_info
-                    ))
+                    ), stacklevel=2)
             except PyCMSError as ex:
                 warn(CMSWarning(
                     f"{ex} on {path}, assuming sRGB: {cms_info}",
                     path=path,
                     cms_info=cms_info,
                     cause=ex,
-                ))
+                ), stacklevel=2)
 
     except Exception as ex:
         print(f"{ex} on {path}")

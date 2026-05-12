@@ -17,7 +17,7 @@ class DiffusersUNet2DWrapper(UNet2DModel):
         self,
         sample: torch.Tensor,
         timestep: Union[torch.Tensor, float, int],
-        conditioning: Dict[str, torch.Tensor] = None,
+        conditioning: Dict[str, torch.Tensor] | None = None,
         *args,
         **kwargs,
     ):

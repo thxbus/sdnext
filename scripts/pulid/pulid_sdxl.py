@@ -34,7 +34,7 @@ class StableDiffusionXLPuLIDPipeline:
                  pipe: Union[StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline],
                  device: torch.device,
                  dtype: torch.dtype=None,
-                 providers: list=None,
+                 providers: list | None=None,
                  offload: bool=True,
                  sampler=None,
                  cache_dir=None,
@@ -284,7 +284,7 @@ class StableDiffusionXLPuLIDPipeline:
         debug(f'PulID embedding: cond={id_embedding.shape} uncond={uncond_id_embedding.shape}')
         return uncond_id_embedding, id_embedding
 
-    def set_progress_bar_config(self, bar_format: str = None, ncols: int = 80, colour: str = None):
+    def set_progress_bar_config(self, bar_format: str | None = None, ncols: int = 80, colour: str | None = None):
         import functools
         from tqdm.auto import trange as trange_orig
         import pulid_sampling

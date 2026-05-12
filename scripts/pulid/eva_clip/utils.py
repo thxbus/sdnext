@@ -76,7 +76,7 @@ def resize_visual_pos_embed(state_dict, model, interpolation: str = 'bicubic', s
     state_dict['positional_embedding'] = new_pos_embed
 
 def resize_evaclip_pos_embed(state_dict, model, interpolation: str = 'bicubic', seq_dim=1):
-    all_keys = list(state_dict.keys())
+    list(state_dict.keys())
     # interpolate position embedding
     if 'visual.pos_embed' in state_dict:
         pos_embed_checkpoint = state_dict['visual.pos_embed']
@@ -107,7 +107,7 @@ def resize_evaclip_pos_embed(state_dict, model, interpolation: str = 'bicubic', 
 
 
 def resize_eva_pos_embed(state_dict, model, interpolation: str = 'bicubic', seq_dim=1):
-    all_keys = list(state_dict.keys())
+    list(state_dict.keys())
     # interpolate position embedding
     if 'pos_embed' in state_dict:
         pos_embed_checkpoint = state_dict['pos_embed']
@@ -149,7 +149,7 @@ def resize_rel_pos_embed(state_dict, model, interpolation: str = 'bicubic', seq_
             dst_num_pos, _ = model.visual.state_dict()[key].size()
             dst_patch_shape = model.visual.patch_embed.patch_shape
             if dst_patch_shape[0] != dst_patch_shape[1]:
-                raise NotImplementedError()
+                raise NotImplementedError
             num_extra_tokens = dst_num_pos - (dst_patch_shape[0] * 2 - 1) * (dst_patch_shape[1] * 2 - 1)
             src_size = int((src_num_pos - num_extra_tokens) ** 0.5)
             dst_size = int((dst_num_pos - num_extra_tokens) ** 0.5)

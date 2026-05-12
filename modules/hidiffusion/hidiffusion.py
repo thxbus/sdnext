@@ -107,7 +107,7 @@ def make_diffusers_transformer_block(block_class: Type[torch.nn.Module]) -> Type
             encoder_hidden_states: Optional[torch.FloatTensor] = None,
             encoder_attention_mask: Optional[torch.FloatTensor] = None,
             timestep: Optional[torch.LongTensor] = None,
-            cross_attention_kwargs: Dict[str, Any] = None,
+            cross_attention_kwargs: Dict[str, Any] | None = None,
             class_labels: Optional[torch.LongTensor] = None,
             added_cond_kwargs: Optional[Dict[str, torch.Tensor]] = None,
         ) -> torch.FloatTensor:

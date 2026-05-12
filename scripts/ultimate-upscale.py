@@ -25,7 +25,7 @@ class USDUpscaler():
 
     def __init__(self, p, image, upscaler_index:int, tile_width, tile_height) -> None:
         self.p:StableDiffusionProcessing = p
-        self.image:Image = image
+        self.image:Image.Image = image
         self.scales = []
         self.result_images = []
         self.scale_factor = math.ceil(max(p.width, p.height) / max(image.width, image.height))

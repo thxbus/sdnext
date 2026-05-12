@@ -49,10 +49,10 @@ class BaseConfig:
                         f"Catch Exception {type(e)} with message: " + str(e)
                     ) from e
 
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             raise FileNotFoundError(
                 f"Config file not found. Please check path '{json_path}'"
-            )
+            ) from e
 
     @classmethod
     def from_json(cls, json_path: str) -> "BaseConfig":
@@ -72,7 +72,7 @@ class BaseConfig:
             warnings.warn(
                 f"You are trying to load a "
                 f"`{ cls.__name__}` while a "
-                f"`{config_name}` is given."
+                f"`{config_name}` is given.", stacklevel=2
             )
 
         return cls.from_dict(config_dict)
@@ -134,7 +134,7 @@ class BaseConfig:
             warnings.warn(
                 f"You are trying to load a "
                 f"`{ cls.__name__}` while a "
-                f"`{config_name}` is given."
+                f"`{config_name}` is given.", stacklevel=2
             )
 
         return cls.from_dict(config_dict)

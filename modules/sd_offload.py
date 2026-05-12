@@ -234,7 +234,6 @@ class OffloadHook(accelerate.hooks.ModelHook):
             return False
         return True
 
-    @torch.compiler.disable
     def pre_forward(self, module, *args, **kwargs):
         _id = id(module)
 
@@ -277,13 +276,20 @@ class OffloadHook(accelerate.hooks.ModelHook):
                 log.trace(f'Offload: type=balanced op=dispatch map={device_map}')
             if device_map is not None:
                 skip_keys = getattr(module, "_skip_keys", None)
-                module = accelerate.dispatch_model(module,
-                                                   main_device=torch.device(devices.device),
-                                                   device_map=device_map,
-                                                   offload_dir=offload_dir,
-                                                   skip_keys=skip_keys,
-                                                   force_hooks=True,
-                                                  )
+                try:
+                    module = accelerate.dispatch_model(module,
+                                                    main_device=torch.device(devices.device),
+                                                    device_map=device_map,
+                                                    offload_dir=offload_dir,
+                                                    skip_keys=skip_keys,
+                                                    force_hooks=True,
+                                                    )
+                except Exception as e: # reapply hook
+                    log.warning(f'Offload: type=balanced op=dispatch module={module.__class__.__name__} {e}')
+                    module = accelerate.hooks.remove_hook_from_module(module, recurse=True)
+                    module.balanced_offload_device_map = None
+                    sd_models.move_model(module, devices.device, force=True)
+                    module = accelerate.hooks.add_hook_to_module(module, self, append=True)
             module._hf_hook.execution_device = torch.device(devices.device) # pylint: disable=protected-access
             module.balanced_offload_device_map = device_map
             module.balanced_offload_max_memory = max_memory
@@ -298,7 +304,6 @@ class OffloadHook(accelerate.hooks.ModelHook):
         self.last_pre = _id
         return args, kwargs
 
-    @torch.compiler.disable
     def post_forward(self, module, output):
         if self.last_post != id(module):
             self.last_post = id(module)
@@ -500,7 +505,7 @@ def apply_balanced_offload(sd_model=None, exclude: list[str] | None = None, forc
                 continue
             module.module_name = module_name
             module.offload_dir = os.path.join(shared.opts.accelerate_offload_path, checkpoint_name, module_name)
-            apply_balanced_offload_to_module(module, op='apply')
+            apply_balanced_offload_to_module(module, op='apply', force=force)
             if not silent:
                 report_model_stats(module_name, module)
 

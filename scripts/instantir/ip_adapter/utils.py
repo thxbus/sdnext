@@ -53,7 +53,7 @@ def init_adapter_in_unet(
         if pretrained_model_path_or_dict is not None:
             if "ip_adapter" in state_dict.keys():
                 adapter_modules = torch.nn.ModuleList(unet.attn_processors.values())
-                missing, unexpected = adapter_modules.load_state_dict(state_dict["ip_adapter"], strict=False)
+                missing, _unexpected = adapter_modules.load_state_dict(state_dict["ip_adapter"], strict=False)
                 for mk in missing:
                     if "ln" not in mk:
                         raise ValueError(f"Missing keys in adapter_modules: {missing}")
@@ -143,7 +143,7 @@ def load_adapter_to_pipe(
     # Load pretrinaed model if needed.
     if "ip_adapter" in state_dict.keys():
         adapter_modules = torch.nn.ModuleList(unet.attn_processors.values())
-        missing, unexpected = adapter_modules.load_state_dict(state_dict["ip_adapter"], strict=False)
+        missing, _unexpected = adapter_modules.load_state_dict(state_dict["ip_adapter"], strict=False)
         for mk in missing:
             if "ln" not in mk:
                 raise ValueError(f"Missing keys in adapter_modules: {missing}")

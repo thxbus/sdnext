@@ -50,11 +50,11 @@ def load_per_module(sd_model: diffusers.DiffusionPipeline, filename: str, adapte
     return adapter_name
 
 
-def load_diffusers(name: str, network_on_disk: network.NetworkOnDisk, lora_scale:float=shared.opts.extra_networks_default_multiplier, lora_module=None) -> network.Network | None:
+def load_diffusers(name: str, network_on_disk: network.NetworkOnDisk, lora_scale:float=shared.opts.extra_networks_default_multiplier, lora_module=None, reason: str = '') -> network.Network | None:
     t0 = time.time()
     name = name.replace(".", "_")
     sd_model: diffusers.DiffusionPipeline = getattr(shared.sd_model, "pipe", shared.sd_model)
-    log.debug(f'Network load: type=LoRA name="{name}" file="{network_on_disk.filename}" detected={network_on_disk.sd_version} method=diffusers scale={lora_scale} fuse={shared.opts.lora_fuse_native}:{shared.opts.lora_fuse_diffusers}')
+    log.debug(f'Network load: type=LoRA name="{name}" file="{network_on_disk.filename}" detected={network_on_disk.sd_version} method=diffusers reason={reason or "unknown"} scale={lora_scale} fuse={shared.opts.lora_fuse_native}:{shared.opts.lora_fuse_diffusers}')
     if not hasattr(sd_model, 'load_lora_weights'):
         log.error(f'Network load: type=LoRA class={sd_model.__class__} does not implement load lora')
         return None

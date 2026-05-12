@@ -6,7 +6,7 @@ import logging
 
 def broadcat(tensors, dim = -1):
     num_tensors = len(tensors)
-    shape_lens = set(list(map(lambda t: len(t.shape), tensors)))
+    shape_lens = set(map(lambda t: len(t.shape), tensors))
     assert len(shape_lens) == 1, 'tensors must all have the same number of dimensions'
     shape_len = list(shape_lens)[0]
     dim = (dim + shape_len) if dim < 0 else dim
@@ -51,7 +51,7 @@ class VisionRotaryEmbedding(nn.Module):
         else:
             raise ValueError(f'unknown modality {freqs_for}')
 
-        if ft_seq_len is None: ft_seq_len = pt_seq_len
+        if ft_seq_len is None: ft_seq_len = pt_seq_len  # noqa: E701
         t = torch.arange(ft_seq_len) / ft_seq_len * pt_seq_len
 
         freqs_h = torch.einsum('..., f -> ... f', t, freqs)
@@ -101,7 +101,7 @@ class VisionRotaryEmbeddingFast(nn.Module):
         else:
             raise ValueError(f'unknown modality {freqs_for}')
 
-        if ft_seq_len is None: ft_seq_len = pt_seq_len
+        if ft_seq_len is None: ft_seq_len = pt_seq_len  # noqa: E701
         t = torch.arange(ft_seq_len) / ft_seq_len * pt_seq_len
 
         freqs = torch.einsum('..., f -> ... f', t, freqs)

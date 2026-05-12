@@ -1079,19 +1079,19 @@ class StableDiffusionXLPAGPipeline(
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def __call__(
         self,
-        prompt: Union[str, List[str]] = None,
+        prompt: Union[str, List[str]] | None = None,
         prompt_2: Optional[Union[str, List[str]]] = None,
         height: Optional[int] = None,
         width: Optional[int] = None,
         num_inference_steps: int = 50,
-        timesteps: List[int] = None,
+        timesteps: List[int] | None = None,
         denoising_end: Optional[float] = None,
         guidance_scale: float = 5.0,
         pag_scale: float = 0.0,
         pag_adaptive_scaling: float = 0.0,
         pag_drop_rate: float = 0.5,
         pag_applied_layers: List[str] = ['mid'], #['down', 'mid', 'up']
-        pag_applied_layers_index: List[str] = None, #['d4', 'd5', 'm0']
+        pag_applied_layers_index: List[str] | None = None, #['d4', 'd5', 'm0']
         negative_prompt: Optional[Union[str, List[str]]] = None,
         negative_prompt_2: Optional[Union[str, List[str]]] = None,
         num_images_per_prompt: Optional[int] = 1,
@@ -1507,10 +1507,10 @@ class StableDiffusionXLPAGPipeline(
                                     up_layers[layer_number].processor = replace_processor
                                 else:
                                     raise ValueError(f"Invalid layer type: {drop_layer[0]}")
-                            except IndexError:
+                            except IndexError as e:
                                 raise ValueError(
                                     f"Invalid layer index: {drop_layer}. Available layers: {len(down_layers)} down layers, {len(mid_layers)} mid layers, {len(up_layers)} up layers."
-                                )
+                                ) from e
                     elif self.pag_applied_layers:
                         drop_full_layers = self.pag_applied_layers
                         for drop_full_layer in drop_full_layers:
@@ -1526,10 +1526,10 @@ class StableDiffusionXLPAGPipeline(
                                         up_layer.processor = replace_processor
                                 else:
                                     raise ValueError(f"Invalid layer type: {drop_full_layer}")
-                            except IndexError:
+                            except IndexError as e:
                                 raise ValueError(
                                     f"Invalid layer index: {drop_full_layer}. Available layers are: down, mid and up. If you need to specify each layer index, you can use `pag_applied_layers_index`"
-                                )
+                                ) from e
 
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
 
@@ -1678,8 +1678,8 @@ class StableDiffusionXLPAGPipeline(
                             up_layers[layer_number].processor = AttnProcessor2_0()
                         else:
                             raise ValueError(f"Invalid layer type: {drop_layer[0]}")
-                    except IndexError:
-                        raise ValueError(f"Invalid layer index: {drop_layer}. Available layers: {len(down_layers)} down layers, {len(mid_layers)} mid layers, {len(up_layers)} up layers.")
+                    except IndexError as e:
+                        raise ValueError(f"Invalid layer index: {drop_layer}. Available layers: {len(down_layers)} down layers, {len(mid_layers)} mid layers, {len(up_layers)} up layers.") from e
             elif self.pag_applied_layers:
                 drop_full_layers = self.pag_applied_layers
                 for drop_full_layer in drop_full_layers:
@@ -1695,6 +1695,6 @@ class StableDiffusionXLPAGPipeline(
                                 up_layer.processor = AttnProcessor2_0()
                         else:
                             raise ValueError(f"Invalid layer type: {drop_full_layer}")
-                    except IndexError:
-                        raise ValueError(f"Invalid layer index: {drop_full_layer}. Available layers are: down, mid and up. If you need to specify each layer index, you can use `pag_applied_layers_index`")
+                    except IndexError as e:
+                        raise ValueError(f"Invalid layer index: {drop_full_layer}. Available layers are: down, mid and up. If you need to specify each layer index, you can use `pag_applied_layers_index`") from e
         return StableDiffusionXLPipelineOutput(images=image)

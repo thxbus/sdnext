@@ -17,7 +17,7 @@ class Tiler:
         overlap_size: tuple,
         scale: int = 1,
         out_channels: int = 3,
-    ) -> List[List[torch.tensor]]:
+    ) -> List[List[torch.Tensor]]:
         """Get tiles
         Args:
             input (torch.Tensor): input array of shape (batch_size, channels, height, width)
@@ -82,8 +82,8 @@ class Tiler:
         return tiles
 
     def merge_tiles(
-        self, tiles: List[List[torch.tensor]], tiling_method: str = "gaussian"
-    ) -> torch.tensor:
+        self, tiles: List[List[torch.Tensor]], tiling_method: str = "gaussian"
+    ) -> torch.Tensor:
         """Merge tiles by averaging the overlaping regions
         Args:
             tiles (Dict[str, Tile]): dictionary of processed tiles
@@ -102,7 +102,7 @@ class Tiler:
                 f"Unknown tiling method {tiling_method}. Available methods are {TILING_METHODS}"
             )
 
-    def _average_merge_tiles(self, tiles: List[List[torch.tensor]]) -> torch.tensor:
+    def _average_merge_tiles(self, tiles: List[List[torch.Tensor]]) -> torch.Tensor:
         """Merge tiles by averaging the overlaping regions
         Args:
             tiles (Dict[str, Tile]): dictionary of processed tiles
@@ -203,10 +203,10 @@ class Tiler:
             torch.tensor(weights, device="cpu"), (nbatches, channels, 1, 1)
         )
 
-    def _gaussian_merge_tiles(self, tiles: List[List[torch.tensor]]) -> torch.tensor:
+    def _gaussian_merge_tiles(self, tiles: List[List[torch.Tensor]]) -> torch.Tensor:
         """Merge tiles by averaging the overlaping regions
         Args:
-            List[List[torch.tensor]]: List of processed tiles
+            List[List[torch.Tensor]]: List of processed tiles
         Returns:
             torch.tensor: output image
         """
@@ -277,10 +277,10 @@ class Tiler:
             ] * (x / blend_extent)
         return b
 
-    def _linear_merge_tiles(self, tiles: List[List[torch.tensor]]) -> torch.Tensor:
+    def _linear_merge_tiles(self, tiles: List[List[torch.Tensor]]) -> torch.Tensor:
         """Merge tiles by blending the overlaping regions
         Args:
-            tiles (List[List[torch.tensor]]): List of processed tiles
+            tiles (List[List[torch.Tensor]]): List of processed tiles
         Returns:
             torch.Tensor: output image
         """

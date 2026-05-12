@@ -433,6 +433,10 @@ def load_diffuser_force(detected_model_type, checkpoint_info, diffusers_load_con
             from pipelines.model_omnigen import load_omnigen
             sd_model = load_omnigen(checkpoint_info, diffusers_load_config)
             allow_post_quant = False
+        elif model_type in ['HiDreamO1']:
+            from pipelines.model_hidream import load_hidream_o1
+            sd_model = load_hidream_o1(checkpoint_info, diffusers_load_config)
+            allow_post_quant = False
         elif model_type in ['HiDream']:
             from pipelines.model_hidream import load_hidream
             sd_model = load_hidream(checkpoint_info, diffusers_load_config)
@@ -974,16 +978,38 @@ def load_diffuser(checkpoint_info=None, op='model', revision=None): # pylint: di
             move_model(sd_model, devices.device)
         timer.load.record("move")
 
-        if shared.opts.ipex_optimize:
-            sd_model = sd_models_compile.ipex_optimize(sd_model)
-
-        if ('Model' in shared.opts.cuda_compile and shared.opts.cuda_compile_backend != 'none'):
-            sd_model = sd_models_compile.compile_diffusers(sd_model)
-        timer.load.record("compile")
-
     except Exception as e:
         log.error(f"Load {op}: {e}")
         errors.display(e, "Model")
+
+    try:
+        if shared.opts.ipex_optimize:
+            sd_model = sd_models_compile.ipex_optimize(sd_model)
+
+        if (shared.opts.cuda_compile_backend != 'none') and len(shared.opts.cuda_compile) > 0:
+            if 'components' in shared.opts.cuda_compile_options:
+                sd_model = sd_models_compile.compile_diffusers(sd_model, apply_to_components=True)
+            else:
+                if 'Model' in shared.opts.cuda_compile:
+                    if hasattr(sd_model, "unet"):
+                        sd_model.unet = sd_models_compile.compile_diffusers(sd_model.unet, apply_to_components=False)
+                    if hasattr(sd_model, "transformer"):
+                        sd_model.transformer = sd_models_compile.compile_diffusers(sd_model.transformer, apply_to_components=False)
+                if 'TE' in shared.opts.cuda_compile:
+                    if hasattr(sd_model, "text_encoder"):
+                        sd_model.text_encoder = sd_models_compile.compile_diffusers(sd_model.text_encoder, apply_to_components=False)
+                    if hasattr(sd_model, "text_encoder_2"):
+                        sd_model.text_encoder_2 = sd_models_compile.compile_diffusers(sd_model.text_encoder_2, apply_to_components=False)
+                    if hasattr(sd_model, "text_encoder_3"):
+                        sd_model.text_encoder_3 = sd_models_compile.compile_diffusers(sd_model.text_encoder_3, apply_to_components=False)
+                if 'VAE' in shared.opts.cuda_compile:
+                    if hasattr(sd_model, "vae"):
+                        sd_model.vae = sd_models_compile.compile_diffusers(sd_model.vae, apply_to_components=False)
+
+        timer.load.record("compile")
+    except Exception as e:
+        log.error(f"Compile {op}: {e}")
+        errors.display(e, "Compile")
 
     if shared.opts.diffusers_offload_mode != 'balanced':
         devices.torch_gc(force=True, reason='load')
@@ -1263,6 +1289,8 @@ def set_diffuser_pipe(pipe, new_pipe_type):
             fn = f'{sys._getframe(2).f_code.co_name}:{sys._getframe(1).f_code.co_name}' # pylint: disable=protected-access
             log.trace(f"Pipeline class change requested: target={new_pipe_type} fn={fn}") # pylint: disable=protected-access
             log.warning(f'Pipeline class change failed: type={new_pipe_type} pipeline={cls} {e}')
+            if debug_load:
+                errors.display(e, 'Pipeline switch')
             has_errors = True
     if not hasattr(pipe, 'config') or has_errors:
         try: # maybe a wrapper pipeline so just change the class
@@ -1280,6 +1308,8 @@ def set_diffuser_pipe(pipe, new_pipe_type):
                 return pipe
         except Exception as e: # pylint: disable=unused-variable
             log.warning(f'Pipeline class set failed: type={new_pipe_type} pipeline={cls} {e}')
+            if debug_load:
+                errors.display(e, 'Pipeline switch')
             has_errors = True
             return pipe
 

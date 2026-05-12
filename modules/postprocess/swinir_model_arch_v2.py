@@ -266,7 +266,7 @@ class SwinTransformerBlock(nn.Module):
 
     def forward(self, x, x_size):
         H, W = x_size
-        B, L, C = x.shape
+        B, _L, C = x.shape
         #assert L == H * W, "input feature has wrong size"
 
         shortcut = x
@@ -476,7 +476,7 @@ class PatchEmbed(nn.Module):
             self.norm = None
 
     def forward(self, x):
-        B, C, H, W = x.shape
+        _B, _C, _H, _W = x.shape
         # FIXME look at relaxing size constraints
         # assert H == self.img_size[0] and W == self.img_size[1],
         #     f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
@@ -591,7 +591,7 @@ class PatchUnEmbed(nn.Module):
         self.embed_dim = embed_dim
 
     def forward(self, x, x_size):
-        B, HW, C = x.shape
+        B, _HW, _C = x.shape
         x = x.transpose(1, 2).view(B, self.embed_dim, x_size[0], x_size[1])  # B Ph*Pw C
         return x
 

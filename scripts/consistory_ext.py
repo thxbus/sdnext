@@ -75,7 +75,7 @@ class ConsiStoryScript(scripts_manager.Script):
             shared.sd_model = sd_models.switch_pipe(cs.ConsistoryExtendAttnSDXLPipeline, shared.sd_model)
             shared.sd_model.unet = cs.ConsistorySDXLUNet2DConditionModel.from_config(shared.sd_model.unet.config)
             shared.sd_model.unet.load_state_dict(state_dict) # now load it into new class
-            shared.sd_model.unet.to(dtype=devices.dtype)
+            shared.sd_model.unet.to(dtype=devices.dtype) # ty: ignore
             state_dict = None
             # sd_models.set_diffuser_options(shared.sd_model)
             sd_models.move_model(shared.sd_model, devices.device)
@@ -196,7 +196,7 @@ class ConsiStoryScript(scripts_manager.Script):
             log.warning(f'ConsiStory: class={shared.sd_model.__class__.__name__} model={shared.sd_model_type} required={supported_model_list}')
             return None
 
-        subject, concepts, prompts, dropout, sampler, steps, same, queries, sdsa, freeu, _freeu_preset, alpha, injection = args # pylint: disable=unused-variable
+        _subject, concepts, prompts, dropout, _sampler, steps, same, queries, sdsa, _freeu, _freeu_preset, alpha, injection = args # pylint: disable=unused-variable
 
         self.create_model() # create model if not already done
         concepts, anchors, prompts, alpha, steps, seed = self.set_args(p, *args) # set arguments

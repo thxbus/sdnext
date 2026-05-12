@@ -93,7 +93,7 @@ def civit_update_metadata(raw: bool = False):
                         model.latest_name = f.get('name', '')
                         if model.vername == model.latest:
                             model.status = 'Latest version'
-                        elif any(map(lambda v: v in model.latest_hashes, all_hashes)): # pylint: disable=cell-var-from-loop # noqa: C417
+                        elif any(map(lambda v: v in model.latest_hashes, all_hashes)): # pylint: disable=cell-var-from-loop
                             model.status = 'Update downloaded'
                         else:
                             model.status = 'Update available'
@@ -104,7 +104,7 @@ def civit_update_metadata(raw: bool = False):
 
 
 def atomic_civit_search_metadata(item, results):
-    from modules.civitai.download_civitai import download_civit_preview, download_civit_meta
+    from modules.civitai.download_civitai import download_civit_preview, download_civit_meta, backfill_preview_parameters, preview_has_parameters, resolve_preview_file
     if item is None:
         return
     try:
@@ -112,7 +112,12 @@ def atomic_civit_search_metadata(item, results):
     except Exception:
         return
     has_meta = os.path.isfile(meta) and os.stat(meta).st_size > 0
-    if ('missing.png' in item['preview'] or not has_meta) and os.path.isfile(item['filename']):
+    needs_backfill = False
+    if has_meta and 'missing.png' not in item.get('preview', ''):
+        actual_preview = resolve_preview_file(item)
+        if actual_preview and not preview_has_parameters(actual_preview):
+            needs_backfill = True
+    if ('missing.png' in item['preview'] or not has_meta or needs_backfill) and os.path.isfile(item['filename']):
         sha = item.get('hash', None)
         found = False
         result = {
@@ -136,9 +141,13 @@ def atomic_civit_search_metadata(item, results):
                 results.append(dict(result))
                 for img in version.images:
                     if img.url:
-                        code, size, note = download_civit_preview(item['filename'], img.url)
+                        code, size, note = download_civit_preview(item['filename'], img.url, meta=img.meta)
                         if code == 200:
                             results.append({**result, 'code': code, 'size': size, 'note': note, 'type': 'preview'})
+                            found = True
+                            break
+                        if code == 304 and backfill_preview_parameters(item['filename'], img.url, img.meta):
+                            results.append({**result, 'code': 200, 'size': '', 'note': 'metadata embedded', 'type': 'preview'})
                             found = True
                             break
             else:
@@ -157,9 +166,13 @@ def atomic_civit_search_metadata(item, results):
                 results.append(dict(result))
                 for img in version.images:
                     if img.url:
-                        code, size, note = download_civit_preview(item['filename'], img.url)
+                        code, size, note = download_civit_preview(item['filename'], img.url, meta=img.meta)
                         if code == 200:
                             results.append({**result, 'code': code, 'size': size, 'note': note, 'type': 'preview'})
+                            found = True
+                            break
+                        if code == 304 and backfill_preview_parameters(item['filename'], img.url, img.meta):
+                            results.append({**result, 'code': 200, 'size': '', 'note': 'metadata embedded', 'type': 'preview'})
                             found = True
                             break
             else:

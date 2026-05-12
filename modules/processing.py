@@ -135,7 +135,7 @@ def get_processed(*args, **kwargs):
     return processed
 
 
-def process_images(p: StableDiffusionProcessing) -> Processed:
+def process_images(p: StableDiffusionProcessing) -> Processed | None:
     timer.process.reset()
     debug(f'Process images: class={p.__class__.__name__} {vars(p)}')
     if shared.sd_model is None:

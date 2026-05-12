@@ -94,7 +94,7 @@ def compile_onediff(sd_model):
         log.warning(f"Model compile: task=onediff {e}")
         return sd_model
 
-    debug_log(f"Model compile: task=onediff pipeline={sd_model.__class__.__name__}")
+    log.info(f"Model compile: task=onediff pipeline={sd_model.__class__.__name__} precompile={'precompile' in shared.opts.cuda_compile_options}")
     try:
         t0 = time.time()
         # For some reason compiling the text_encoder, when it is used by
@@ -144,7 +144,7 @@ def compile_stablefast(sd_model):
     # config.trace_scheduler = False
     # config.enable_cnn_optimization
     # config.prefer_lowp_gemm
-    debug_log(f"Model compile: task=stablefast config={config.__dict__}")
+    log.debug(f"Model compile: task=stablefast config={config.__dict__} precompile={'precompile' in shared.opts.cuda_compile_options} {config}")
     try:
         t0 = time.time()
         sd_model = sf.compile(sd_model, config)
@@ -165,14 +165,18 @@ def compile_torch(sd_model, apply_to_components=True, op="Model"):
         t0 = time.time()
         import torch._dynamo # pylint: disable=unused-import,redefined-outer-name
         torch._dynamo.reset() # pylint: disable=protected-access
-        log.debug(f"{op} compile: task=torch backends={torch._dynamo.list_backends()}") # pylint: disable=protected-access
-        debug_log(f"{op} compile: options={shared.opts.cuda_compile_options} mode={shared.opts.cuda_compile_mode} backend={shared.opts.cuda_compile_backend} targets={shared.opts.cuda_compile}")
+        log.debug(f"{op} compile: task=torch available={torch._dynamo.list_backends()}") # pylint: disable=protected-access
+        is_repeated = hasattr(sd_model, 'compile_repeated_blocks') and 'repeated' in shared.opts.cuda_compile_options and not sd_model.__class__.__name__.startswith("Autoencoder")
+        log.debug(f"{op} compile: options={shared.opts.cuda_compile_options} mode={shared.opts.cuda_compile_mode} backend={shared.opts.cuda_compile_backend} repeated={is_repeated} components={apply_to_components} targets={shared.opts.cuda_compile}")
 
         compiled_components = []
 
         def torch_compile_model(model, op=None, sd_model=None): # pylint: disable=unused-argument
-            compiled_components.append(model.__class__.__name__)
-            if hasattr(model, 'compile_repeated_blocks') and 'repeated' in shared.opts.cuda_compile_options:
+            setup_logging() # compile messes with logging so reset is needed
+            log.debug(f"Compile: cls={sd_model.__class__.__name__} apply")
+            name = model.__class__.__name__ if callable(model) else model.__name__
+            compiled_components.append(name)
+            if is_repeated:
                 model.compile_repeated_blocks(
                     mode=shared.opts.cuda_compile_mode,
                     backend=shared.opts.cuda_compile_backend,
@@ -194,7 +198,8 @@ def compile_torch(sd_model, apply_to_components=True, op="Model"):
                     fullgraph='fullgraph' in shared.opts.cuda_compile_options,
                     dynamic='dynamic' in shared.opts.cuda_compile_options,
                 )
-            devices.torch_gc()
+            devices.torch_gc(force=True, reason='compile')
+            setup_logging() # compile messes with logging so reset is needed
             return model
 
         if shared.opts.cuda_compile_backend == "openvino_fx" or shared.opts.cuda_compile_backend == "openvino":
@@ -207,11 +212,16 @@ def compile_torch(sd_model, apply_to_components=True, op="Model"):
             pass # pylint: disable=unused-import
         verbose = debug or 'verbose' in shared.opts.cuda_compile_options
         log_level = logging.WARNING if verbose else logging.CRITICAL # pylint: disable=protected-access
+
+        # configure torch.dynamo
         if hasattr(torch, '_logging'):
             torch._logging.set_logs(dynamo=log_level, aot=log_level, inductor=log_level) # pylint: disable=protected-access
         torch._dynamo.config.verbose = verbose # pylint: disable=protected-access
         torch._dynamo.config.suppress_errors = not verbose # pylint: disable=protected-access
+        if 'dynamic' in shared.opts.cuda_compile_options:
+            torch._dynamo.config.capture_dynamic_output_shape_ops = True # pylint: disable=protected-access
 
+        # configure torch.inductor
         try:
             torch._inductor.config.conv_1x1_as_mm = True # pylint: disable=protected-access
             torch._inductor.config.coordinate_descent_tuning = True # pylint: disable=protected-access
@@ -227,16 +237,14 @@ def compile_torch(sd_model, apply_to_components=True, op="Model"):
         else:
             sd_model = torch_compile_model(sd_model, op=op)
 
-        setup_logging() # compile messes with logging so reset is needed
         if apply_to_components and 'precompile' in shared.opts.cuda_compile_options:
             try:
-                log.debug(f"{op} compile: task=torch precompile")
+                log.debug(f"{op} compile: precompile start")
                 sd_model("dummy prompt")
             except Exception:
                 pass
         t1 = time.time()
-        log.info(f"{op} compile: task=torch time={t1-t0:.2f}")
-        debug_log(f"{op} compile: task=torch completed components={compiled_components} targets={shared.opts.cuda_compile} verbose={verbose} time={t1-t0:.2f}")
+        log.info(f"{op} compile: task=torch components={compiled_components} time={t1-t0:.2f}")
     except Exception as e:
         log.warning(f"{op} compile: task=torch {e}")
         errors.display(e, 'Compile')
@@ -261,7 +269,7 @@ def compile_deepcache(sd_model):
     except Exception as e:
         log.warning(f'Model compile: task=deepcache {e}')
         return sd_model
-    debug_log(f"Model compile: task=deepcache pipeline={sd_model.__class__.__name__} interval={shared.opts.deep_cache_interval}")
+    log.debug(f"Model compile: task=deepcache pipeline={sd_model.__class__.__name__} interval={shared.opts.deep_cache_interval}")
     t0 = time.time()
     check_deepcache(False)
     deepcache_worker = DeepCacheSDHelper(pipe=sd_model)
@@ -276,7 +284,7 @@ def compile_diffusers(sd_model, apply_to_components=True, op="Model"):
     if shared.opts.cuda_compile_backend == 'none':
         log.warning(f'{op} compile enabled but no backend specified')
         return sd_model
-    log.info(f"{op} compile: pipeline={sd_model.__class__.__name__} mode={shared.opts.cuda_compile_mode} backend={shared.opts.cuda_compile_backend} options={shared.opts.cuda_compile_options} compile={shared.opts.cuda_compile}")
+    log.info(f"{op} compile: pipeline={sd_model.__class__.__name__} backend={shared.opts.cuda_compile_backend} options={shared.opts.cuda_compile_options}")
     if shared.opts.cuda_compile_backend == 'onediff':
         sd_model = compile_onediff(sd_model)
     elif shared.opts.cuda_compile_backend == 'stable-fast':

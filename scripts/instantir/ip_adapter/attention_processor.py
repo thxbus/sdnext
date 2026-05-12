@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class AdaLayerNorm(nn.Module):
-    def __init__(self, embedding_dim: int, time_embedding_dim: int = None):
+    def __init__(self, embedding_dim: int, time_embedding_dim: int | None = None):
         super().__init__()
 
         if time_embedding_dim is None:
@@ -219,7 +219,7 @@ class TA_IPAttnProcessor(nn.Module):
             The context length of the image features.
     """
 
-    def __init__(self, hidden_size, cross_attention_dim=None, time_embedding_dim: int = None, scale=1.0, num_tokens=4):
+    def __init__(self, hidden_size, cross_attention_dim=None, time_embedding_dim: int | None = None, scale=1.0, num_tokens=4):
         super().__init__()
 
         self.hidden_size = hidden_size
@@ -703,9 +703,9 @@ class AdditiveKV_AttnProcessor2_0(torch.nn.Module):
 
     def __init__(
         self,
-        hidden_size: int = None,
-        cross_attention_dim: int = None,
-        time_embedding_dim: int = None,
+        hidden_size: int | None = None,
+        cross_attention_dim: int | None = None,
+        time_embedding_dim: int | None = None,
         additive_scale: float = 1.0,
     ):
         super().__init__()
@@ -812,9 +812,9 @@ class TA_AdditiveKV_AttnProcessor2_0(torch.nn.Module):
 
     def __init__(
         self,
-        hidden_size: int = None,
-        cross_attention_dim: int = None,
-        time_embedding_dim: int = None,
+        hidden_size: int | None = None,
+        cross_attention_dim: int | None = None,
+        time_embedding_dim: int | None = None,
         additive_scale: float = 1.0,
     ):
         super().__init__()
@@ -969,7 +969,7 @@ class IPAttnProcessor2_0(torch.nn.Module):
 
         if isinstance(encoder_hidden_states, tuple):
             # FIXME: now hard coded to single image prompt.
-            batch_size, _, hid_dim = encoder_hidden_states[0].shape
+            batch_size, _, _hid_dim = encoder_hidden_states[0].shape
             ip_tokens = encoder_hidden_states[1][0]
             encoder_hidden_states = torch.cat([encoder_hidden_states[0], ip_tokens], dim=1)
 
@@ -1066,7 +1066,7 @@ class TA_IPAttnProcessor2_0(torch.nn.Module):
             The context length of the image features.
     """
 
-    def __init__(self, hidden_size, cross_attention_dim=None, time_embedding_dim: int = None, scale=1.0, num_tokens=4):
+    def __init__(self, hidden_size, cross_attention_dim=None, time_embedding_dim: int | None = None, scale=1.0, num_tokens=4):
         super().__init__()
 
         if not hasattr(F, "scaled_dot_product_attention"):
@@ -1113,7 +1113,7 @@ class TA_IPAttnProcessor2_0(torch.nn.Module):
             )
         else:
             # FIXME: now hard coded to single image prompt.
-            batch_size, _, hid_dim = encoder_hidden_states[0].shape
+            batch_size, _, _hid_dim = encoder_hidden_states[0].shape
             ip_hidden_states = encoder_hidden_states[1][0]
             encoder_hidden_states = encoder_hidden_states[0]
         batch_size, sequence_length, _ = (
@@ -1406,7 +1406,7 @@ def init_attn_proc(unet, ip_adapter_tokens=16, use_lcm=False, use_adaln=True, us
 
 def init_aggregator_attn_proc(unet, use_adaln=False, split_attn=False):
     attn_procs = {}
-    unet_sd = unet.state_dict()
+    unet.state_dict()
     for name in unet.attn_processors.keys():
         # get layer name and hidden dim
         cross_attention_dim = None if name.endswith("attn1.processor") else unet.config.cross_attention_dim

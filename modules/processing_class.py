@@ -279,6 +279,7 @@ class StableDiffusionProcessing:
                  skip_processing: bool = False,
                  override_settings_restore_afterwards: bool = True,
                  override_settings: dict[str, Any] | None = None,
+                 network_data: dict | None = None,
                  # metadata
                  # extra_generation_params: Dict[Any, Any] = {},
                  # task_args: Dict[str, Any] = {},
@@ -322,7 +323,7 @@ class StableDiffusionProcessing:
         self.negative_prompt_attention_masks = []
         self.disable_extra_networks = False
         self.iteration = 0
-        self.network_data = {}
+        self.network_data = network_data or {}
 
         # initializers
         self.prompt = prompt

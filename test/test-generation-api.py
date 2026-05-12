@@ -417,7 +417,7 @@ class GenerationAPITest:
             self.skip(f'param_{name}', 'baseline generation failed')
             return
 
-        data, elapsed = self._txt2img(params)
+        data, _elapsed = self._txt2img(params)
         if 'error' in data:
             self.record(False, f'param_{name}', f"generation error: {data}")
             return
@@ -505,7 +505,7 @@ class GenerationAPITest:
 
         # Vignette: corners should be darker than baseline corners
         def check_vignette(base, result, _data):
-            h, w = base.shape[:2]
+            h, _w = base.shape[:2]
             corner_size = h // 8
             base_corners = np.concatenate([
                 base[:corner_size, :corner_size].flatten(),

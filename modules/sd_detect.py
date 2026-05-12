@@ -87,6 +87,10 @@ def guess_by_name(fn, current_guess):
         new_guess = 'OmniGen'
     elif 'sd3' in fn.lower():
         new_guess = 'Stable Diffusion 3'
+    elif 'hidream-o1' in fn.lower():
+        new_guess = 'HiDreamO1'
+    elif 'hidream' in fn.lower():
+        new_guess = 'HiDream'
     elif 'hidream' in fn.lower():
         new_guess = 'HiDream'
     elif 'zeta-chroma' in fn.lower() or 'zetachroma' in fn.lower():

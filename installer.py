@@ -530,7 +530,7 @@ def check_transformers():
     else:
         # target_transformers = '4.57.6'
         target_transformers = None
-        target_tokenizers = '0.22.2'
+        target_tokenizers = '0.23.1'
     if target_transformers is not None:
         # Pinned release version (e.g. DirectML)
         if (pkg_transformers is None) or ((pkg_transformers.version != target_transformers) or (pkg_tokenizers is None) or ((pkg_tokenizers.version != target_tokenizers) and (not args.experimental))):
@@ -1382,7 +1382,16 @@ def get_version(force=False):
         try:
             origin = run('git', 'remote get-url origin', check=True)[0].stdout
             branch_name = run('git', 'rev-parse --abbrev-ref HEAD', check=True)[0].stdout
-            version['url'] = origin.removesuffix('.git') + '/tree/' + branch_name
+            # normalize ssh remotes (git@host:owner/repo) and ssh-protocol remotes
+            # (ssh://git@host/owner/repo) to the canonical https form so downstream
+            # url parsers don't have to special-case each remote shape
+            if origin.startswith('git@'):
+                host, _, path = origin.partition(':')
+                origin = f'https://{host[4:]}/{path}'
+            elif origin.startswith('ssh://'):
+                origin = 'https://' + origin[len('ssh://'):].split('@', 1)[-1]
+            origin = origin.removesuffix('.git')
+            version['url'] = origin + '/tree/' + branch_name
             version['branch'] = branch_name
             if version['branch'] == 'HEAD':
                 log.warning('Version: detached state detected')
@@ -1539,6 +1548,9 @@ def check_version(reset=True): # pylint: disable=unused-argument
         else:
             api_base = 'https://api.github.com/repos/vladmandic/sdnext'
         branches = requests.get(f'{api_base}/branches', timeout=5).json()
+        if not isinstance(branches, list):
+            log.error(f'Repository: branches API returned {branches!r} from {api_base}')
+            return
         branch_names = [b['name'] for b in branches if 'name' in b]
         log.trace(f'Repository branches: active={branch_name} available={branch_names}')
     except Exception as e:

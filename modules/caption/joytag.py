@@ -1,6 +1,5 @@
 # Vendored from JoyTag: https://huggingface.co/spaces/fancyfeast/joytag
 # Contains full model architecture (ViT, CNN stems, MAE) including training-only code
-# retained for update compatibility. Do not modify directly — sync from upstream.
 
 import os
 import math
@@ -942,7 +941,7 @@ class ViT(VisionModel):
         loss_type: str,
         layerscale_init: float | None = None,
         head_mean_after: bool = False,
-        cnn_stem: str = None,
+        cnn_stem: str | None = None,
         patch_dropout: float = 0.0,
     ):
         super().__init__(image_size, n_tags)

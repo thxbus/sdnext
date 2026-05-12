@@ -373,7 +373,7 @@ def create_settings(cmd_opts):
         "cuda_compile": OptionInfo([] if not cmd_opts.use_openvino else ["Model", "VAE", "Upscaler", "Control"], "Compile Model", gr.CheckboxGroup, {"choices": ["Model", "TE", "VAE", "LLM", "Control", "Upscaler"]}),
         "cuda_compile_backend": OptionInfo("inductor" if not cmd_opts.use_openvino else "openvino_fx", "Model compile backend", gr.Radio, {"choices": ['none', 'inductor', 'cudagraphs', 'aot_ts_nvfuser', 'hidet', 'migraphx', 'ipex', 'onediff', 'stable-fast', 'deep-cache', 'olive-ai', 'openvino', 'openvino_fx']}),
         "cuda_compile_mode": OptionInfo("default", "Model compile mode", gr.Radio, {"choices": ['default', 'reduce-overhead', 'max-autotune', 'max-autotune-no-cudagraphs']}),
-        "cuda_compile_options": OptionInfo(["repeated", "fullgraph", "dynamic"] if not cmd_opts.use_openvino else [], "Model compile options", gr.CheckboxGroup, {"choices": ["precompile", "repeated", "fullgraph", "dynamic", "verbose"]}),
+        "cuda_compile_options": OptionInfo(["repeated", "dynamic", "components"] if not cmd_opts.use_openvino else [], "Model compile options", gr.CheckboxGroup, {"choices": ["components", "precompile", "repeated", "fullgraph", "dynamic", "verbose"]}),
         "deep_cache_interval": OptionInfo(3, "DeepCache cache interval", gr.Slider, {"minimum": 1, "maximum": 10, "step": 1}),
     }))
 
@@ -684,7 +684,7 @@ def create_settings(cmd_opts):
                 "autocomplete_active": OptionInfo(False, "Enable Autocomplete", gr.Checkbox, {"visible": False}),
                 "autocomplete_enabled": OptionInfo([], "Enabled tag autocomplete files", gr.Dropdown, {"multiselect": True, "choices": [], "visible": False}),
                 "autocomplete_min_chars": OptionInfo(3, "Min autocomplete chars", gr.Slider, {"minimum": 2, "maximum": 6, "step": 1, "visible": False}),
-                "autocomplete_replace_underscores": OptionInfo(True, "Replace underscores in autocomplete", gr.Checkbox, {"visible": False}),
+                "autocomplete_keep_underscores": OptionInfo(False, "Keep underscores in autocomplete", gr.Checkbox, {"visible": False}),
                 "autocomplete_append_comma": OptionInfo(True, "Append comma after autocomplete", gr.Checkbox, {"visible": False}),
 
                 # Caption settings (controlled via Caption Tab UI)

@@ -530,7 +530,7 @@ class Step1XEditCrossAttnBlock(torch.nn.Module):
         y: torch.Tensor=None,
 
     ):
-        gate_msa, gate_mlp = self.adaLN_modulation(c).chunk(2, dim=1)
+        gate_msa, _gate_mlp = self.adaLN_modulation(c).chunk(2, dim=1)
 
         norm_x = self.norm1(x)
         norm_y = self.norm1_2(y)

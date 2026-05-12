@@ -72,6 +72,8 @@ def get_model_type(pipe):
         model_type = 'sana'
     elif 'VIBE' in name:
         model_type = 'sana'
+    elif "HiDreamO1" in name:
+        model_type = 'o1'
     elif "HiDream" in name:
         model_type = 'h1'
     elif name.startswith("Anima") and "AnimateDiff" not in name:

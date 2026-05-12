@@ -395,7 +395,7 @@ class TDDScheduler(DPMSolverSinglestepScheduler):
         model_output_list: List[torch.FloatTensor],
         *args,
         sample: torch.FloatTensor = None,
-        order: int = None,
+        order: int | None = None,
         **kwargs,
     ) -> torch.FloatTensor:
         timestep_list = args[0] if len(args) > 0 else kwargs.pop("timestep_list", None)

@@ -446,6 +446,8 @@ class StyleDatabase:
             log.error(f'Styles invalid: {p.styles}')
             return
         for style in p.styles:
+            if style is None or style == '':
+                continue
             s = self.find_style(style)
             if s == self.no_style:
                 log.warning(f'Apply style: name="{style}" not found')
