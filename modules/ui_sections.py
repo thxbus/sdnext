@@ -232,6 +232,8 @@ def create_sampler_and_steps_selection(choices, tabname, default_steps:int=20):
     with gr.Row(elem_id=f"{tabname}_sampler_row", elem_classes=['flex-break', 'flexbox']):
         steps = gr.Slider(minimum=1, maximum=100, step=1, label="Steps", elem_id=f"{tabname}_steps", value=default_steps)
         sampler_index = gr.Dropdown(label='Sampling method', elem_id=f"{tabname}_sampling", choices=[x.name for x in choices], value='Default', type="index")
+        has_filter_active = len(shared.opts.uifilters_available_samplers) > 0
+        btn_filtered_samplers = ToolButton(ui_symbols.warning, elem_id="btn_filtered_samplers", visible=has_filter_active, interactive=False)
     return steps, sampler_index
 
 
@@ -379,6 +381,9 @@ def create_resize_inputs(tab, images, accordion=True, latent=False, non_zero=Tru
                 available_upscalers = [x for x in available_upscalers if not x.lower().startswith('latent')]
             resize_mode = gr.Dropdown(label=f"Mode{prefix}" if non_zero else "Resize mode", elem_id=f"{tab}_resize_mode", choices=shared.resize_modes, type="index", value='Fixed')
             resize_name = gr.Dropdown(label=f"Method{prefix}" if non_zero else "Resize method", elem_id=f"{tab}_resize_name", choices=available_upscalers, value=available_upscalers[0], visible=True)
+            has_filter_active = len(shared.opts.uifilters_available_upscalers) > 0
+            btn_filtered_upscalers = ToolButton(ui_symbols.warning, elem_id="btn_filtered_upscalers", visible=has_filter_active, interactive=False)
+            
             resize_context_choices = ["Add with forward", "Remove with forward", "Add with backward", "Remove with backward"]
             resize_context = gr.Dropdown(label=f"Context{prefix}", elem_id=f"{tab}_resize_context", choices=resize_context_choices, value=resize_context_choices[0], visible=False)
             resize_refresh_btn = ui_common.create_refresh_button(resize_name, modelloader.load_upscalers, lambda: {"choices": modelloader.load_upscalers()}, f'{tab}_upscalers_refresh')

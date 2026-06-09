@@ -150,7 +150,9 @@
     {"id":"","label":"Adapter 2","localized":"","hint":"","ui":"txt2img"},
     {"id":"","label":"Adapter 3","localized":"","hint":"","ui":"txt2img"},
     {"id":"","label":"Adapter 4","localized":"","hint":"","ui":"txt2img"},
-    {"id":"","label":"Audio","localized":"","hint":"","ui":"video"}
+    {"id":"","label":"Audio","localized":"","hint":"","ui":"video"},
+    {"id":"","label":"Available samplers","localized":"","hint":"Controls which samplers are selectable from the Sampling method dropdown. If left empty, all samplers will be available.","ui":"settings_ui"},
+    {"id":"","label":"Available upscalers","localized":"","hint":"Controls which image upscalers are selectable from the Resize method dropdown. If left empty, all upscalers will be available.","ui":"settings_ui"}
   ],
   "b": [
     {"id":"","label":"Batch","localized":"","hint":"Batch processing settings","ui":"img2img"},
@@ -199,7 +201,9 @@
     {"id":"","label":"Build info on first access","localized":"","hint":"Prevents server from building EN page on server startup and instead build it when requested","ui":"settings_extra_networks"},
     {"id":"","label":"Beta Ratio","localized":"","hint":"","ui":"component-5655"},
     {"id":"","label":"BETA Block Weight Preset","localized":"","hint":"","ui":"component-5660"},
-    {"id":"","label":"Base model type","localized":"","hint":"","ui":"models_replace_tab"}
+    {"id":"","label":"Base model type","localized":"","hint":"","ui":"models_replace_tab"},
+    {"id":"btn_filtered_samplers","label":"Filters active","localized":"","hint":"Only some samplers are listed due to active filters. These filters can be changed in the Settings menu, under <i>User Interface -> Filters</i>."},
+    {"id":"btn_filtered_upscalers","label":"Filters active","localized":"","hint":"Only some upscalers are listed due to active filters. These filters can be changed in the Settings menu, under <i>User Interface -> Filters</i>."}
   ],
   "c": [
     {"id":"caption_nav","label":"Caption","localized":"","hint":"Analyze existing images and create text descriptions"},

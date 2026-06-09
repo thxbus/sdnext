@@ -49,6 +49,7 @@ listfiles = listdir
 xformers_available = False
 compiled_model_state = None
 sd_upscalers = []
+sd_all_upscalers = []
 detailers = []
 yolo = None
 tab_names = []

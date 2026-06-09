@@ -5,6 +5,8 @@ from modules.logger import log
 
 
 debug = os.environ.get('SD_SAMPLER_DEBUG', None)
+
+required_samplers = ["Default"]
 all_samplers = []
 all_samplers_map = {}
 samplers = all_samplers
@@ -22,20 +24,54 @@ def find_sampler(name:str):
     return None
 
 
+def list_all_samplers():
+    global all_samplers # pylint: disable=global-statement
+    global all_samplers_map # pylint: disable=global-statement
+    from modules import sd_samplers_diffusers
+    all_samplers = [*sd_samplers_diffusers.samplers_data_diffusers]
+    all_samplers_map = {x.name: x for x in all_samplers}
+
+    return all_samplers
+
 def list_samplers():
     global all_samplers # pylint: disable=global-statement
     global all_samplers_map # pylint: disable=global-statement
     global samplers # pylint: disable=global-statement
     global samplers_for_img2img # pylint: disable=global-statement
     global samplers_map # pylint: disable=global-statement
-    from modules import sd_samplers_diffusers
-    all_samplers = [*sd_samplers_diffusers.samplers_data_diffusers]
-    all_samplers_map = {x.name: x for x in all_samplers}
-    samplers = all_samplers
-    samplers_for_img2img = all_samplers
-    samplers_map = {}
-    return all_samplers
+    all_samplers = list_all_samplers()
 
+    samplers = []
+    samplers_for_img2img = []
+
+    for sampler in required_samplers:
+        try_add_sampler(sampler)
+
+    enabled_samplers = shared.opts.uifilters_available_samplers
+    if (enabled_samplers is None or len(enabled_samplers) == 0):
+        enabled_samplers = [s.name for s in all_samplers if s.name not in required_samplers]
+
+    for sampler in enabled_samplers:
+        try_add_sampler(sampler)
+
+    samplers_map = {x.name : x for x in samplers}
+    return samplers
+    # log.debug(f'Available samplers: {[x.name for x in all_samplers]}')
+
+def try_add_sampler(sampler):
+        global all_samplers_map
+        global samplers
+
+        existing = [s for s in samplers if s.name == sampler]
+        if (len(existing) > 0):
+            return
+        
+        config = all_samplers_map.get(sampler, None)
+        if config is not None:
+            samplers.append(config)
+            samplers_for_img2img.append(config)
+        else:
+            log.error(f'Sampler "{sampler}" not found')
 
 def find_sampler_config(name):
     if name is not None and name != 'None':
@@ -165,11 +201,11 @@ def create_sampler(name, model, scheduler_overrides=None):
 def set_samplers():
     global samplers # pylint: disable=global-statement
     global samplers_for_img2img # pylint: disable=global-statement
-    samplers = all_samplers
+    samplers = list_samplers()
     # samplers_for_img2img = [x for x in samplers if x.name != "PLMS"]
     samplers_for_img2img = samplers
     samplers_map.clear()
-    for sampler in all_samplers:
+    for sampler in samplers:
         samplers_map[sampler.name.lower()] = sampler.name
         for alias in sampler.aliases:
             samplers_map[alias.lower()] = sampler.name

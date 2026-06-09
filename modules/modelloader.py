@@ -16,6 +16,7 @@ from modules import paths
 
 loggedin = None
 diffuser_repos = []
+required_upscalers = [] # these upscalers are used by some pipelines, so we want to make sure they are loaded
 debug = log.trace if os.environ.get('SD_DOWNLOAD_DEBUG', None) is not None else lambda *args, **kwargs: None
 pbar = None
 
@@ -463,7 +464,14 @@ def load_upscalers():
             log.error(f'Upscaler: {cls} {e}')
     if len(upscalers) == 0:
         log.error('Upscalers: no data')
-    shared.sd_upscalers = upscalers
+    shared.sd_all_upscalers = upscalers
+
+    if len(shared.opts.uifilters_available_upscalers) > 0:
+        shared.sd_upscalers = [x for x in upscalers if (x.name in shared.opts.uifilters_available_upscalers) or (x.name in required_upscalers)]
+    else:
+        shared.sd_upscalers = upscalers
+    
     t1 = time.time()
     log.info(f"Available Upscalers: items={len(shared.sd_upscalers)} downloaded={len([x for x in shared.sd_upscalers if x.data_path is not None and os.path.isfile(x.data_path)])} user={len([x for x in shared.sd_upscalers if x.custom])} time={t1-t0:.2f} types={upscaler_types}")
+    log.debug(f"Upscalers: {', '.join([x.name for x in shared.sd_upscalers])}")
     return [x.name for x in shared.sd_upscalers]

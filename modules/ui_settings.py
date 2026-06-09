@@ -30,6 +30,14 @@ def apply_setting(key, value):
             value = ckpt_info.title
         else:
             return gr.update()
+        
+    if key == "uifilters_available_upscalers":
+        shared.refresh_upscalers()
+
+    if key == "uifilters_available_samplers":
+        from modules import sd_samplers
+        sd_samplers.list_samplers()
+
     comp_args = shared.opts.data_labels[key].component_args
     if comp_args and isinstance(comp_args, dict) and comp_args.get('visible') is False:
         return gr.update()
