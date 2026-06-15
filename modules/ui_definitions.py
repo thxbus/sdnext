@@ -552,7 +552,8 @@ def create_settings(cmd_opts):
         "return_mask": OptionInfo(False, "Inpainting include greyscale mask in results"),
         "return_mask_composite": OptionInfo(False, "Inpainting include masked composite in results"),
         "send_seed": OptionInfo(True, "Send seed when sending prompt or image to other interface", gr.Checkbox, {"visible": False}),
-        "send_size": OptionInfo(False, "Send size when sending prompt or image to another interface", gr.Checkbox, {"visible": False}),
+        "send_size": OptionInfo(False, "Send size when sending prompt or image to another interface", gr.Checkbox, {"visible": False}),        
+        "send_steps" : OptionInfo(True, "Send steps when sending prompt or image to another interface", gr.Checkbox, {"visible": True}),
     }))
 
     # --- Live Previews ---
