@@ -46,6 +46,7 @@ declare global {
     get_img2img_tab_index?: (...args: unknown[]) => unknown[]; // ui/ui.ts
     modelmerger?: (...args: unknown[]) => unknown[]; // ui/ui.ts
     restartReload?: (initial?: boolean) => void; // ui/ui.ts
+    set_theme?: (theme: string) => void; // ui/ui.ts
     selected_gallery_index?: () => number; // ui/ui.ts
     selected_gallery_files?: (...args: unknown[]) => unknown[]; // ui/ui.ts
     send_to_kanvas?: (gallery: { data?: string }[]) => void; // ui/ui.ts
@@ -74,6 +75,7 @@ declare global {
     recalculate_prompts_img2img?: (...args: unknown[]) => unknown[]; // ui/ui.ts
     recalculate_prompts_inpaint?: (...args: unknown[]) => unknown[]; // ui/ui.ts
     recalculate_prompts_control?: (...args: unknown[]) => unknown[]; // ui/ui.ts
+    resolutionChange?: (ar: string, width: number, height: number) => unknown[]; // ui/ui.ts
     consumeDesiredCheckpointName?: (...args: unknown[]) => unknown[]; // ui/ui.ts
     create_submit_args?: (args: unknown[]) => unknown[]; // ui/ui.ts
     selectCheckpoint?: (name: string) => void; // ui/ui.ts
@@ -165,6 +167,7 @@ declare global {
     }; // extensions-builtin/sdnext-kanvas/src/Kanvas.ts
     loadFromURL?: (url: string) => unknown; // external
     getKanvasData?: () => { kanvas: true; image: string | null; mask: string | null } | null; // extensions-builtin/sdnext-kanvas/javascript/kanvas.mjs
+    resizeStage?: (width: number, height: number) => void; // extensions-builtin/sdnext-kanvas/javascript/kanvas.mjs
 
     // browser api
     showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>;

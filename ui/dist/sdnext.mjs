@@ -9959,7 +9959,7 @@ var uiReadyCallbacks = [];
 var uiTabChangeCallbacks = [];
 var optionsChangedCallbacks = [];
 var uiCurrentTab = null;
-var uiAfterUpdateTimeout = null;
+var uiAfterUpdateTimeout;
 function registerCallback(queue, callback) {
   if (queue.includes(callback)) return;
   queue.push(callback);
@@ -10035,7 +10035,7 @@ var executedOnLoaded = false;
 var ignoreElements = ["logMonitorData", "logWarnings", "logErrors", "tooltip-container", "logger"];
 var ignoreElementsSet = new Set(ignoreElements);
 var ignoreClasses = ["wrap"];
-var mutationTimer = null;
+var mutationTimer;
 var validMutations = [];
 async function mutationCallback(mutations) {
   if (mutations.length <= 0) return;
@@ -10063,7 +10063,7 @@ async function mutationCallback(mutations) {
       executeCallbacks(uiTabChangeCallbacks);
     }
     validMutations = [];
-    mutationTimer = null;
+    mutationTimer = void 0;
   }, 100);
 }
 document.addEventListener("DOMContentLoaded", () => {
@@ -10697,30 +10697,30 @@ function setupExtraNetworksForTab(tabName) {
   txtDescription.classList.add("description");
   div.appendChild(txtSearch);
   div.appendChild(txtDescription);
-  let searchTimer = null;
+  let debouceSearch;
   txtSearchValue.addEventListener("input", (evt) => {
-    if (searchTimer) clearTimeout(searchTimer);
-    searchTimer = setTimeout(async () => {
+    if (debouceSearch) clearTimeout(debouceSearch);
+    debouceSearch = setTimeout(async () => {
       await filterExtraNetworksForTab(txtSearchValue.value.toLowerCase());
-      searchTimer = null;
+      debouceSearch = void 0;
     }, 100);
   });
-  let hoverTimer = null;
+  let debounceHover;
   let previousCard = null;
   if (window.opts.extra_networks_fetch) {
     gradioApp().getElementById(`${tabName}_extra_tabs`).onmouseover = async (e) => {
       const el2 = e.target.closest(".card");
       if (!el2 || el2.title === previousCard) return;
-      if (!hoverTimer) {
-        hoverTimer = setTimeout(() => {
+      if (!debounceHover) {
+        debounceHover = setTimeout(() => {
           readCardDescription(el2.dataset.page, el2.dataset.name);
           readCardTags(el2, el2.dataset.tags);
           previousCard = el2.title;
         }, 300);
       }
       el2.onmouseout = () => {
-        clearTimeout(hoverTimer);
-        hoverTimer = null;
+        clearTimeout(debounceHover);
+        debounceHover = void 0;
       };
     };
   }
@@ -11045,7 +11045,7 @@ function requestProgress(id_task = "undefined", progressEl = null, galleryEl = n
     livePreview.appendChild(img);
     img.onload = () => {
       img.style.width = `min(100%, max(${img.naturalWidth}px, 512px))`;
-      parentGallery.style.minHeight = `min(82vh, ${img.naturalWidth}px)`;
+      parentGallery.style.minHeight = `min(82vh, ${img.naturalHeight}px)`;
       parentGallery.style.maxHeight = `min(82vh, ${img.naturalHeight}px)`;
       parentGallery.style.overflow = "hidden";
     };
@@ -11134,11 +11134,16 @@ var fontSizeApplyRaf = 0;
 var pendingFontSize = null;
 var appliedFontSize = null;
 var cachedGradioRoot = null;
+var resizeDebounce;
 var wait_time = 800;
 var token_timeouts = {};
 var uiLoaded = false;
 var promptsInitialized = false;
 window.args_to_array = Array.from;
+function set_theme(theme) {
+  const gradioURL = window.location.href;
+  if (!gradioURL.includes("?__theme=")) window.location.replace(`${gradioURL}?__theme=${theme}`);
+}
 function update_token_counter(button_id) {
   if (token_timeouts[button_id]) clearTimeout(token_timeouts[button_id]);
   token_timeouts[button_id] = setTimeout(() => gradioApp().getElementById(button_id)?.click(), wait_time);
@@ -11680,6 +11685,21 @@ async function toggleCompact(val, old) {
     gradioApp().querySelectorAll(".small-accordion .label-wrap").forEach((el2) => el2.classList.remove("accordion-compact"));
   }
 }
+function resolutionChange(ar, width, height) {
+  let desired = ar;
+  if (desired === "AR") desired = "1:1";
+  try {
+    const [w, h] = desired.split(":").map((x) => parseInt(x));
+    if (w > h) height = Math.round(width * h / w);
+    else if (h > w) width = Math.round(height * w / h);
+  } catch {
+  }
+  if (window.resizeStage) {
+    clearTimeout(resizeDebounce);
+    resizeDebounce = setTimeout(() => window.resizeStage(width, height), 250);
+  }
+  return [ar, width, height];
+}
 async function reconnectUI() {
   const t0 = performance.now();
   const gallery = gradioApp().getElementById("txt2img_gallery");
@@ -11746,6 +11766,7 @@ window.recalculate_prompts_txt2img = recalculate_prompts_txt2img;
 window.recalculate_prompts_img2img = recalculate_prompts_img2img;
 window.recalculate_prompts_inpaint = recalculate_prompts_inpaint;
 window.recalculate_prompts_control = recalculate_prompts_control;
+window.resolutionChange = resolutionChange;
 window.selectCheckpoint = selectCheckpoint;
 window.selectVAE = selectVAE;
 window.selectUNet = selectUNet;
@@ -11758,6 +11779,7 @@ window.currentImageResolutionimg2img = currentImageResolutionimg2img;
 window.currentImageResolutioncontrol = currentImageResolutioncontrol;
 window.updateImg2imgResizeToTextAfterChangingImage = updateImg2imgResizeToTextAfterChangingImage;
 window.create_submit_args = create_submit_args;
+window.set_theme = set_theme;
 
 // ui/inputAccordion.ts
 function inputAccordionChecked(id, checked) {
@@ -12187,7 +12209,7 @@ function markIfModified(setting_name, value) {
   if (changed_items.size > 0) tab_nav_indicator.title += `click to reset ${changed_items.size} unapplied changes in this tab
 `;
   if (saved.size > 0) tab_nav_indicator.title += `${saved.size} custom values
-${unsaved.size} default values}`;
+${unsaved.size} default values`;
 }
 window.markIfModified = markIfModified;
 function updateAllOpts() {
@@ -13097,8 +13119,8 @@ var SimpleProgressBar = class {
   #textDiv = document.createElement("div");
   #text = document.createElement("span");
   #visible = false;
-  #hideTimeout = null;
-  #interval = null;
+  #hideTimeout;
+  #interval;
   #max = 0;
   /** @type {Set} */
   #monitoredSet;
@@ -13128,7 +13150,7 @@ var SimpleProgressBar = class {
   clear() {
     this.#stop();
     clearTimeout(this.#hideTimeout);
-    this.#hideTimeout = null;
+    this.#hideTimeout = void 0;
     this.#container.style.display = "none";
     this.#visible = false;
     this.#progress.style.width = "0";
@@ -13136,7 +13158,7 @@ var SimpleProgressBar = class {
   }
   #update(loaded, max) {
     if (this.#hideTimeout) {
-      this.#hideTimeout = null;
+      this.#hideTimeout = void 0;
     }
     this.#progress.style.width = `${Math.floor(loaded / max * 100)}%`;
     this.#text.textContent = `${loaded}/${max}`;
@@ -13146,9 +13168,7 @@ var SimpleProgressBar = class {
     }
     if (loaded >= max) {
       this.#stop();
-      this.#hideTimeout = setTimeout(() => {
-        this.clear();
-      }, 1e3);
+      this.#hideTimeout = setTimeout(() => this.clear(), 1e3);
     }
   }
   #stop() {
@@ -14184,14 +14204,13 @@ async function getExif(el2) {
   }
   let html = "";
   let params;
-  if (exif.parameters) {
-    params = exif.parameters;
-  } else if (exif.userComment) {
-    params = decodeBytes(exif.userComment);
-  } else {
-    params = "";
+  if (!exif) {
+    log("getExif", "exif is none");
+    return html;
   }
-  debug("getExif", params);
+  if (exif.parameters) params = exif.parameters;
+  else if (exif.userComment) params = decodeBytes(exif.userComment);
+  else params = "";
   if (params.length > 0) html += `<b>Prompt</b> ${params || ""}<br>`;
   html = html.replace("Negative prompt:", "<br><b>Negative</b>");
   html = html.replace("Steps:", "<br><b>Params</b> Steps:");
@@ -14974,8 +14993,8 @@ var dropdown = {
     this.hide();
   }
 };
-var debounceTimer = null;
-var focusoutHideTimer = null;
+var debounceInput;
+var debounceFocus;
 function onInput(textarea) {
   if (!active) return;
   if (textarea.dataset.imeActive === "1") return;
@@ -14992,8 +15011,8 @@ function onInput(textarea) {
     dropdown.hide();
     return;
   }
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
+  clearTimeout(debounceInput);
+  debounceInput = setTimeout(() => {
     let results;
     if (info.mode === "lora") {
       results = xnEngine.searchLoras(info.word);
@@ -15060,13 +15079,13 @@ function attachAutocomplete(textarea) {
   });
   textarea.addEventListener("focusin", () => {
     if (dropdown.visible && dropdown.textarea && dropdown.textarea !== textarea) dropdown.hide();
-    clearTimeout(focusoutHideTimer);
-    focusoutHideTimer = null;
+    clearTimeout(debounceFocus);
+    debounceFocus = void 0;
     onInput(textarea);
   });
   textarea.addEventListener("focusout", () => {
-    clearTimeout(debounceTimer);
-    focusoutHideTimer = setTimeout(() => dropdown.hide(), 200);
+    clearTimeout(debounceInput);
+    debounceFocus = setTimeout(() => dropdown.hide(), 200);
   });
 }
 var PROMPT_IDS = [
@@ -15198,12 +15217,12 @@ var localeData = {
   type: 2,
   hint: null,
   btn: null,
-  expandTimeout: null,
+  expandTimeout: void 0,
   // Property for expansion timeout
   currentElement: null
   // Track current element for expansion
 };
-var localeTimeout = null;
+var localeTimeout;
 var isTouchDevice = "ontouchstart" in window;
 async function cycleLocale() {
   clearTimeout(localeTimeout);
@@ -15280,7 +15299,7 @@ async function tooltipHideDelegated(e) {
 async function tooltipShow(e) {
   if (localeData.expandTimeout) {
     clearTimeout(localeData.expandTimeout);
-    localeData.expandTimeout = null;
+    localeData.expandTimeout = void 0;
   }
   localeData.hint.classList.remove("tooltip-expanded");
   localeData.currentElement = e.target;
@@ -15336,7 +15355,7 @@ async function tooltipShow(e) {
 async function tooltipHide(e) {
   if (localeData.expandTimeout) {
     clearTimeout(localeData.expandTimeout);
-    localeData.expandTimeout = null;
+    localeData.expandTimeout = void 0;
   }
   localeData.hint.classList.remove("tooltip-show", "tooltip-expanded");
   localeData.currentElement = null;
@@ -16346,7 +16365,7 @@ window.refreshHistory = refreshHistory;
 // ui/aspectRatioOverlay.ts
 var currentWidth = null;
 var currentHeight = null;
-var arFrameTimeout = null;
+var arFrameTimeout;
 function dimensionChange(e, isWidth, isHeight) {
   const { target } = e;
   if (!(target instanceof HTMLInputElement)) return;

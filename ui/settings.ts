@@ -107,7 +107,7 @@ function markIfModified(setting_name, value) {
   tab_nav_indicator.classList.toggle('changed', changed_items.size > 0);
   tab_nav_indicator.classList.toggle('saved', saved.size > 0);
   if (changed_items.size > 0) tab_nav_indicator.title += `click to reset ${changed_items.size} unapplied changes in this tab\n`;
-  if (saved.size > 0) tab_nav_indicator.title += `${saved.size} custom values\n${unsaved.size} default values}`;
+  if (saved.size > 0) tab_nav_indicator.title += `${saved.size} custom values\n${unsaved.size} default values`;
   // TODO why is scroll happening on every change if all pages are visible?
   // elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -147,7 +147,7 @@ async function onAfterUiUpdateCallback() {
   });
 
   const settingsSearch = gradioApp().querySelectorAll('#settings_search > label > textarea')[0];
-  let settingsTimer;
+  let settingsTimer: ReturnType<typeof setTimeout> | undefined;
   let settingSearchValue = '';
 
   function doSettingsSearch() {

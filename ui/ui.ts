@@ -15,6 +15,7 @@ let fontSizeApplyRaf = 0;
 let pendingFontSize: number | null = null;
 let appliedFontSize: number | null = null;
 let cachedGradioRoot: any = null;
+let resizeDebounce: ReturnType<typeof setTimeout> | undefined;
 const wait_time = 800;
 const token_timeouts = {};
 let uiLoaded = false;
@@ -25,7 +26,7 @@ function rememberGallerySelection(name) {
   // dummy
 }
 
-function set_theme(theme) {
+export function set_theme(theme) {
   const gradioURL = window.location.href;
   if (!gradioURL.includes('?__theme=')) window.location.replace(`${gradioURL}?__theme=${theme}`);
 }
@@ -765,6 +766,22 @@ async function browseFolder() {
   return null;
 }
 
+export function resolutionChange(ar: string, width: number, height: number) {
+  let desired = ar;
+  if (desired === 'AR') desired = '1:1';
+  try {
+    const [w, h] = desired.split(':').map((x) => parseInt(x));
+    if (w > h) height = Math.round(width * h / w);
+    else if (h > w) width = Math.round(height * w / h);
+  } catch { /**/ }
+  // min/max size handled in gradio debounce
+  if (window.resizeStage) {
+    clearTimeout(resizeDebounce);
+    resizeDebounce = setTimeout(() => window.resizeStage(width, height), 250); // notify kanvas
+  }
+  return [ar, width, height];
+}
+
 export async function reconnectUI() {
   const t0 = performance.now();
   const gallery = gradioApp().getElementById('txt2img_gallery');
@@ -834,6 +851,7 @@ window.recalculate_prompts_txt2img = recalculate_prompts_txt2img;
 window.recalculate_prompts_img2img = recalculate_prompts_img2img;
 window.recalculate_prompts_inpaint = recalculate_prompts_inpaint;
 window.recalculate_prompts_control = recalculate_prompts_control;
+window.resolutionChange = resolutionChange;
 window.selectCheckpoint = selectCheckpoint;
 window.selectVAE = selectVAE;
 window.selectUNet = selectUNet;
@@ -846,3 +864,4 @@ window.currentImageResolutionimg2img = currentImageResolutionimg2img;
 window.currentImageResolutioncontrol = currentImageResolutioncontrol;
 window.updateImg2imgResizeToTextAfterChangingImage = updateImg2imgResizeToTextAfterChangingImage;
 window.create_submit_args = create_submit_args;
+window.set_theme = set_theme;

@@ -378,8 +378,9 @@ def branch(folder=None):
         b = git('branch --show-current', folder, optional=True)
         if b == '':
             branches = git('branch', folder).split('\n')
-        if len(branches) > 0:
-            b = [x for x in branches if x.startswith('*')][0]
+        marked = [x for x in branches if x.startswith('*')]
+        if len(branches) > 0 and len(marked) > 0:
+            b = marked[0]
             if 'detached' in b and len(branches) > 1:
                 b = branches[1].strip()
                 log.debug(f'Git detached head detected: folder="{folder}" reattach={b}')
@@ -417,7 +418,7 @@ def update(folder, keep_branch = False, rebase = True):
         debug(f'Install update: folder={folder} args={arg} {res}')
     else:
         b = branch(folder)
-        if branch is None:
+        if b is None:
             res = git(f'pull {arg}', folder)
             debug(f'Install update: folder={folder} branch={b} args={arg} {res}')
         else:
@@ -533,11 +534,12 @@ def check_diffusers():
     t_start = time.time()
     if args.skip_all:
         return
-    target_commit = "79e408a705d6aff9762c58e4601b11e7ea00ea86" # diffusers commit hash == 0.39.0.dev0 == 06-03-2026 (adds Ideogram 4)
+    target_commit = "a50ade492678dd105f3df1b3d3e0df35c4e0740e" # diffusers commit hash == 0.39.0.dev0 == 06-12-2026
     # if args.use_rocm or args.use_zluda or args.use_directml:
     #     sha = '043ab2520f6a19fce78e6e060a68dbc947edb9f9' # lock diffusers versions for now
     pkg = package_spec('diffusers')
-    minor = int(pkg.version.split('.')[1] if pkg is not None else -1)
+    parts = pkg.version.split('.') if pkg is not None else []
+    minor = int(parts[1]) if len(parts) > 1 else -1
     current = opts.get('diffusers_version', '') if minor > -1 else ''
     if (minor == -1) or ((current != target_commit) and (not args.experimental)):
         if minor == -1:
@@ -562,7 +564,7 @@ def check_transformers():
     pkg_tokenizers = package_spec('tokenizers')
     # target_commit = '753d61104116eefc8ffc977327b441ee0c8d599f' # transformers commit hash == 4.57.6
     # target_commit = "380e3cc5d59912a48508cb6d4959a31cd460e12e" # transformers commit hash == 5.5.0.dev-0409
-    target_commit = "8e67c5e1d410dff56d985ba7513ccdf57ab1f894" # transformers commit hash == 5.10.0.dev0 == 06-02-2026
+    target_commit = "a14eae2b54c19cb427c919a99c75db07afbeb7a0" # transformers commit hash == 5.10.0.dev0 == 06-12-2026
     if args.use_directml:
         target_transformers = '4.52.4'
         target_tokenizers = '0.21.4'
@@ -1178,7 +1180,10 @@ def install_submodules(force=True):
     res = []
     for submodule in submodules:
         try:
-            name = submodule.split()[1].strip()
+            parts = submodule.split()
+            if len(parts) < 2:
+                continue
+            name = parts[1].strip()
             if args.upgrade:
                 res.append(update(name))
             else:
@@ -1224,7 +1229,7 @@ def install_gradio():
 def install_compel():
     if installed('compel', quiet=True):
         return
-    install("compel==2.3.1", no_deps=True)
+    install("compel==2.4.0", no_deps=True)
 
 
 def install_pydantic():
