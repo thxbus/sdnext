@@ -181,7 +181,7 @@ class FlowMatchDPMSolverMultistepScheduler(SchedulerMixin, ConfigMixin):
         if solver_type not in ["midpoint", "heun"]:
             raise NotImplementedError(f"{solver_type} is not implemented for {self.__class__}")
 
-        if sigma_schedule not in [None, "karras", "exponential", "lambdas", "betas"]:
+        if sigma_schedule not in [None, "karras", "exponential", "lambdas", "betas", "flowmatch"]:
             raise NotImplementedError(f"{sigma_schedule} is not implemented for {self.__class__}")
 
         if beta_schedule not in ["linear", "scaled linear"]:
@@ -295,6 +295,10 @@ class FlowMatchDPMSolverMultistepScheduler(SchedulerMixin, ConfigMixin):
         else:
             num_inference_steps = len(sigmas)
             self.num_inference_steps = num_inference_steps
+            if isinstance(sigmas, torch.Tensor):
+                sigmas = sigmas.detach().cpu().numpy()
+            else:
+                sigmas = np.asarray(sigmas, dtype=np.float64)
 
         if self.config.sigma_schedule == "exponential":
             if self.use_beta_sigmas:

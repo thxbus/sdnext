@@ -21,7 +21,7 @@ else:
         from flash_attn_interface import flash_attn_func as _flash_attn_func
     except ImportError:
         try:
-            from flash_attn import flash_attn_func as _flash_attn_func
+            from flash_attn import flash_attn_func as _flash_attn_func # pylint: disable=ungrouped-imports
         except ImportError:
             _flash_attn_func = None
 
@@ -1083,7 +1083,7 @@ class Qwen3VLModel(Qwen3VLPreTrainedModel):
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Different from the original implementation, Qwen3VL use timestamps rather than absolute time position ids."""
 
-        # Since we use timestamps to seperate videos, like <t1> <vision_start> <frame1> <vision_end> <t2> <vision_start> <frame2> <vision_end>, the video_grid_thw should also be split
+        # Since we use timestamps to separate videos, like <t1> <vision_start> <frame1> <vision_end> <t2> <vision_start> <frame2> <vision_end>, the video_grid_thw should also be split
         if video_grid_thw is not None:
             video_grid_thw = torch.repeat_interleave(video_grid_thw, video_grid_thw[:, 0], dim=0)
             video_grid_thw[:, 0] = 1
@@ -1655,7 +1655,7 @@ class Qwen3VLModel(Qwen3VLPreTrainedModel):
             deepstack_visual_embeds = []
             image_mask_joint = image_mask[visual_pos_masks]
             video_mask_joint = video_mask[visual_pos_masks]
-            for img_embed, vid_embed in zip(deepstack_image_embeds, deepstack_video_embeds):
+            for img_embed, vid_embed in zip(deepstack_image_embeds, deepstack_video_embeds): # pylint: disable=possibly-used-before-assignment
                 embed_joint = img_embed.new_zeros(visual_pos_masks.sum(), img_embed.shape[-1]).to(img_embed.device)
                 embed_joint[image_mask_joint, :] = img_embed
                 embed_joint[video_mask_joint, :] = vid_embed
@@ -1766,7 +1766,7 @@ class Qwen3VLCausalLMOutputWithPast(ModelOutput):
 
 class HiDreamO1Qwen3VLTransformer(Qwen3VLPreTrainedModel, GenerationMixin):
     _checkpoint_conversion_mapping = {}
-    _tied_weights_keys = ["lm_head.weight"]
+    _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208
     accepts_loss_kwargs = False
     config: Qwen3VLConfig
@@ -1838,9 +1838,6 @@ class HiDreamO1Qwen3VLTransformer(Qwen3VLPreTrainedModel, GenerationMixin):
             The temporal, height and width of feature shape of each image in LLM.
         video_grid_thw (`torch.LongTensor` of shape `(num_videos, 3)`, *optional*):
             The temporal, height and width of feature shape of each video in LLM.
-
-        Example:
-            TODO: Add example
         """
         outputs = self.model(
             input_ids=input_ids,

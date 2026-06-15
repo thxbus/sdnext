@@ -4,7 +4,9 @@ import torch
 from diffusers.models.modeling_utils import ModelMixin
 
 from .common import dtype_dict, is_fp8_mm_supported, use_tensorwise_fp8_matmul, check_torch_compile, conv_types, linear_types
-from .quantizer import SDNQConfig, sdnq_post_load_quant, prepare_weight_for_matmul, prepare_svd_for_matmul, get_quant_args_from_config
+from .quantizer import QuantizationMethod, SDNQConfig, sdnq_post_load_quant
+from .quant_utils import prepare_weight_for_matmul, prepare_svd_for_matmul
+from .utils import get_quant_args_from_config, check_param_name_in
 from .forward import get_forward_func
 from .file_loader import load_files
 
@@ -17,33 +19,40 @@ def get_module_names(model: ModelMixin) -> list:
     return modules_names
 
 
-def unset_config_on_save(quantization_config: SDNQConfig) -> SDNQConfig:
-    quantization_config.quantization_device = None
-    quantization_config.return_device = None
-    quantization_config.non_blocking = False
-    quantization_config.add_skip_keys = False
-    return quantization_config
-
-
-def save_sdnq_model(model: ModelMixin, model_path: str, max_shard_size: str = "5GB", is_pipeline: bool = False, sdnq_config: SDNQConfig | None = None) -> None:
+def normalize_tied_weights_keys_for_save(model: ModelMixin, is_pipeline: bool = False) -> list[tuple[torch.nn.Module, object]]:
+    normalized_modules = []
+    modules_to_walk = []
     if is_pipeline:
         for module_name in get_module_names(model):
             module = getattr(model, module_name, None)
-            if hasattr(module, "config") and hasattr(module.config, "quantization_config") and isinstance(module.config.quantization_config, SDNQConfig):
-                module.config.quantization_config = unset_config_on_save(module.config.quantization_config)
-            if hasattr(module, "quantization_config") and isinstance(module.quantization_config, SDNQConfig):
-                module.quantization_config = unset_config_on_save(module.quantization_config)
-    else:
-        if hasattr(model, "config") and hasattr(model.config, "quantization_config") and isinstance(model.config.quantization_config, SDNQConfig):
-            model.config.quantization_config = unset_config_on_save(model.config.quantization_config)
-        if hasattr(model, "quantization_config") and isinstance(model.quantization_config, SDNQConfig):
-            model.quantization_config = unset_config_on_save(model.quantization_config)
+            if isinstance(module, torch.nn.Module):
+                modules_to_walk.append(module)
+    elif isinstance(model, torch.nn.Module):
+        modules_to_walk.append(model)
 
-    model.save_pretrained(model_path, max_shard_size=max_shard_size) # actual save
+    for root_module in modules_to_walk:
+        for submodule in root_module.modules():
+            tied_weights_keys = getattr(submodule, "_tied_weights_keys", None)
+            if isinstance(tied_weights_keys, list):
+                normalized_modules.append((submodule, tied_weights_keys))
+                submodule._tied_weights_keys = {key: key for key in tied_weights_keys} # pylint: disable=protected-access
+    return normalized_modules
+
+
+def restore_tied_weights_keys_after_save(normalized_modules: list[tuple[torch.nn.Module, object]]) -> None:
+    for submodule, tied_weights_keys in normalized_modules:
+        submodule._tied_weights_keys = tied_weights_keys # pylint: disable=protected-access
+
+
+def save_sdnq_model(model: ModelMixin, model_path: str, max_shard_size: str = "5GB", is_pipeline: bool = False, sdnq_config: SDNQConfig | None = None) -> None:
+    normalized_modules = normalize_tied_weights_keys_for_save(model, is_pipeline=is_pipeline)
+    try:
+        model.save_pretrained(model_path, max_shard_size=max_shard_size) # actual save
+    finally:
+        restore_tied_weights_keys_after_save(normalized_modules)
 
     quantization_config_path = os.path.join(model_path, "quantization_config.json")
     if sdnq_config is not None: # if provided, save global config
-        sdnq_config = unset_config_on_save(sdnq_config)
         sdnq_config.to_json_file(quantization_config_path)
 
     if is_pipeline:
@@ -85,6 +94,8 @@ def load_sdnq_model(model_path: str, model_cls: ModelMixin | None = None, file_n
                 quantization_config = model_config.get("quantization_config", None)
                 if quantization_config is None:
                     raise ValueError(f"Cannot determine quantization_config for {model_path}, please provide quantization_config argument")
+        if not isinstance(quantization_config, SDNQConfig):
+            quantization_config = SDNQConfig.from_dict(quantization_config)
 
         if model_cls is None:
             import transformers
@@ -99,14 +110,26 @@ def load_sdnq_model(model_path: str, model_cls: ModelMixin | None = None, file_n
 
         if hasattr(model_cls, "load_config") and hasattr(model_cls, "from_config"):
             config = model_cls.load_config(model_path)
+            if hasattr(config, "quantization_config"):
+                del config.quantization_config
+            if hasattr(config, "pop"):
+                config.pop("quantization_config", None)
             model = model_cls.from_config(config)
         elif hasattr(model_cls, "_from_config"):
             config = transformers.AutoConfig.from_pretrained(model_path)
+            if hasattr(config, "quantization_config"):
+                del config.quantization_config
+            if hasattr(config, "pop"):
+                config.pop("quantization_config", None)
             model = model_cls(config)
         else:
+            if hasattr(model_config, "quantization_config"):
+                del model_config.quantization_config
+            if hasattr(model_config, "pop"):
+                model_config.pop("quantization_config", None)
             model = model_cls(**model_config)
 
-        model = sdnq_post_load_quant(model, torch_dtype=dtype, add_skip_keys=False, use_dynamic_quantization=False, **get_quant_args_from_config(quantization_config))
+        model = sdnq_post_load_quant(model, torch_dtype=dtype, pre_quantized=True, **get_quant_args_from_config(quantization_config))
 
     key_mapping = getattr(model, "_checkpoint_conversion_mapping", None)
     files = []
@@ -115,7 +138,7 @@ def load_sdnq_model(model_path: str, model_cls: ModelMixin | None = None, file_n
         files.append(os.path.join(model_path, file_name))
     else:
         all_files = os.listdir(model_path)
-        files = sorted([os.path.join(model_path, f) for f in all_files if f.endswith(".safetensors")])
+        files = sorted([os.path.join(model_path, f) for f in all_files if f.endswith(".safetensors")]) # pylint: disable=not-an-iterable
 
     state_dict = load_files(files, key_mapping=key_mapping, device=device, method=load_method)
 
@@ -133,6 +156,18 @@ def load_sdnq_model(model_path: str, model_cls: ModelMixin | None = None, file_n
 
     model.load_state_dict(state_dict, assign=True)
     del state_dict
+
+    model.quantization_config = quantization_config
+    model.quantization_method = QuantizationMethod.SDNQ
+    if hasattr(model, "config"):
+        try:
+            model.config.quantization_config = quantization_config
+        except Exception:
+            pass
+        try:
+            model.config["quantization_config"] = quantization_config.to_dict()
+        except Exception:
+            pass
 
     model = post_process_model(model)
     if (dtype is not None) or (dequantize_fp32 is not None) or (use_quantized_matmul is not None):
@@ -162,16 +197,24 @@ def post_process_model(model):
     return model
 
 
-def apply_sdnq_options_to_module(model, dtype: torch.dtype | None = None, dequantize_fp32: bool | None = None, use_quantized_matmul: bool | None = None):
+def apply_sdnq_options_to_module(model, quantization_config: SDNQConfig, dtype: torch.dtype | None = None, dequantize_fp32: bool | None = None, use_quantized_matmul: bool | None = None, full_param_name: str = ""):
     has_children = list(model.children())
     if not has_children:
         if dtype is not None and getattr(model, "dtype", torch.float32) not in {torch.float32, torch.float64}:
             model = model.to(dtype=dtype)
         return model
     for module_name, module in model.named_children():
+        if full_param_name:
+            param_name = full_param_name + "." + module_name
+        else:
+            param_name = module_name
         if hasattr(module, "sdnq_dequantizer"):
             layer_class_name = module.original_class.__name__
             current_use_quantized_matmul = use_quantized_matmul
+            if layer_class_name in conv_types:
+                current_use_quantized_matmul = None
+            elif check_param_name_in(param_name, quantization_config.modules_to_not_use_matmul) is not None:
+                current_use_quantized_matmul = None
 
             if not is_fp8_mm_supported and module.sdnq_dequantizer.quantized_matmul_dtype in {"fp8", "float8_e4m3fn"}:
                 current_use_quantized_matmul = False
@@ -231,14 +274,14 @@ def apply_sdnq_options_to_module(model, dtype: torch.dtype | None = None, dequan
                 module.forward_func = get_forward_func(module.original_class.__name__, module.sdnq_dequantizer.quantized_matmul_dtype, current_use_quantized_matmul)
             setattr(model, module_name, module)
         else:
-            setattr(model, module_name, apply_sdnq_options_to_module(module, dtype=dtype, dequantize_fp32=dequantize_fp32, use_quantized_matmul=use_quantized_matmul))
+            setattr(model, module_name, apply_sdnq_options_to_module(module, quantization_config, dtype=dtype, dequantize_fp32=dequantize_fp32, use_quantized_matmul=use_quantized_matmul, full_param_name=param_name))
     return model
 
 
 def apply_sdnq_options_to_model(model, dtype: torch.dtype | None = None, dequantize_fp32: bool | None = None, use_quantized_matmul: bool | None = None):
     if use_quantized_matmul and not check_torch_compile():
         raise RuntimeError("SDNQ Quantized MatMul requires a working Triton install.")
-    model = apply_sdnq_options_to_module(model, dtype=dtype, dequantize_fp32=dequantize_fp32, use_quantized_matmul=use_quantized_matmul)
+    model = apply_sdnq_options_to_module(model, model.quantization_config, dtype=dtype, dequantize_fp32=dequantize_fp32, use_quantized_matmul=use_quantized_matmul)
     if hasattr(model, "quantization_config"):
         if use_quantized_matmul is not None:
             model.quantization_config.use_quantized_matmul = use_quantized_matmul

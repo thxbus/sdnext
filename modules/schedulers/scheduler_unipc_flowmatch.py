@@ -74,6 +74,9 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
     def __init__(
             self,
             num_train_timesteps: int = 1000,
+            beta_start: float = 0.00085,
+            beta_end: float = 0.012,
+            beta_schedule: str = "linear",
             solver_order: int = 2,
             prediction_type: str = "flow_prediction",
             shift: Optional[float] = 1.0,
@@ -87,6 +90,10 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
             disable_corrector: List[int] = [],
             solver_p: SchedulerMixin = None,
             use_flow_sigmas: bool = True,
+            use_beta_sigmas: Optional[bool] = False,
+            use_exponential_sigmas: Optional[bool] = False,
+            use_karras_sigmas: Optional[bool] = False,
+            rescale_betas_zero_snr: bool = False,
             timestep_spacing: str = "linspace",
             steps_offset: int = 0,
             final_sigmas_type: Optional[str] = "zero",  # "zero", "sigma_min"
@@ -181,6 +188,10 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
             sigmas = np.linspace(self.sigma_max, self.sigma_min,
                                  num_inference_steps +
                                  1).copy()[:-1]  # pyright: ignore
+        elif isinstance(sigmas, torch.Tensor):
+            sigmas = sigmas.detach().cpu().numpy()
+        else:
+            sigmas = np.asarray(sigmas, dtype=np.float32)
 
         if self.config.use_dynamic_shifting:
             sigmas = self.time_shift(mu, 1.0, sigmas)  # pyright: ignore
@@ -302,7 +313,7 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
                 sample = args[1]
             else:
                 raise ValueError(
-                    "missing `sample` as a required keyward argument")
+                    "missing `sample` as a required keyword argument")
         if timestep is not None:
             deprecate(
                 "timesteps",
@@ -377,13 +388,13 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
                 sample = args[1]
             else:
                 raise ValueError(
-                    " missing `sample` as a required keyward argument")
+                    " missing `sample` as a required keyword argument")
         if order is None:
             if len(args) > 2:
                 order = args[2]
             else:
                 raise ValueError(
-                    " missing `order` as a required keyward argument")
+                    " missing `order` as a required keyword argument")
         if prev_timestep is not None:
             deprecate(
                 "prev_timestep",
@@ -516,19 +527,19 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
                 last_sample = args[1]
             else:
                 raise ValueError(
-                    " missing`last_sample` as a required keyward argument")
+                    " missing`last_sample` as a required keyword argument")
         if this_sample is None:
             if len(args) > 2:
                 this_sample = args[2]
             else:
                 raise ValueError(
-                    " missing`this_sample` as a required keyward argument")
+                    " missing`this_sample` as a required keyword argument")
         if order is None:
             if len(args) > 3:
                 order = args[3]
             else:
                 raise ValueError(
-                    " missing`order` as a required keyward argument")
+                    " missing`order` as a required keyword argument")
         if this_timestep is not None:
             deprecate(
                 "this_timestep",
@@ -757,6 +768,41 @@ class FlowUniPCMultistepScheduler(SchedulerMixin, ConfigMixin):
                 A scaled input sample.
         """
         return sample
+
+    def scale_noise(
+        self,
+        sample: torch.FloatTensor,
+        timestep: Union[float, torch.FloatTensor],
+        noise: Optional[torch.FloatTensor] = None,
+    ) -> torch.FloatTensor:
+        """Forward process in flow-matching."""
+        sigmas = self.sigmas.to(device=sample.device, dtype=sample.dtype)
+
+        if sample.device.type == "mps" and torch.is_floating_point(timestep):
+            # mps does not support float64
+            schedule_timesteps = self.timesteps.to(sample.device, dtype=torch.float32)
+            timestep = timestep.to(sample.device, dtype=torch.float32)
+        else:
+            schedule_timesteps = self.timesteps.to(sample.device)
+            timestep = timestep.to(sample.device)
+
+        if self.begin_index is None:
+            step_indices = [self.index_for_timestep(t, schedule_timesteps) for t in timestep]
+        elif self.step_index is not None:
+            # add_noise is called after first denoising step (for inpainting)
+            step_indices = [self.step_index] * timestep.shape[0]
+        else:
+            # add noise is called before first denoising step to create initial latent(img2img)
+            step_indices = [self.begin_index] * timestep.shape[0]
+
+        sigma = sigmas[step_indices].flatten()
+        while len(sigma.shape) < len(sample.shape):
+            sigma = sigma.unsqueeze(-1)
+
+        if noise is None:
+            noise = torch.randn_like(sample)
+
+        return sigma * noise + (1.0 - sigma) * sample
 
     # Copied from diffusers.schedulers.scheduling_dpmsolver_multistep.DPMSolverMultistepScheduler.add_noise
     def add_noise(
